@@ -94,33 +94,28 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
     return round(total, 2), holdings
 
 
-def main():
-    # ==============================
-    # Challenge start gate (HARD)
-    # ==============================
-    CHALLENGE_START = date(2026, 1, 1)
-    today = date.today()
+def write_placeholder():
+    placeholder = {
+        "as_of_utc": utc_now_iso(),
+        "currency": "GBP",
+        "status": "Not started",
+        "starts_on": "2026-01-01",
+        "portfolio_A": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
+        "portfolio_B": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
+    }
+    save_json(LATEST_PATH, placeholder)
+    print(json.dumps(placeholder, indent=2))
 
-    if today < CHALLENGE_START:
-        # Ensure nothing can "start early" even if state.json exists from prior tests
+
+def main():
+    # HARD gate: nothing before 2026
+    if date.today() < date(2026, 1, 1):
+        # Remove any early-start artefacts
         if os.path.exists(STATE_PATH):
             os.remove(STATE_PATH)
-
-        placeholder = {
-            "as_of_utc": utc_now_iso(),
-            "currency": "GBP",
-            "status": "Not started",
-            "starts_on": "2026-01-01",
-            "portfolio_A": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
-            "portfolio_B": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
-        }
-        save_json(LATEST_PATH, placeholder)
-        print(json.dumps(placeholder, indent=2))
+        write_placeholder()
         return
 
-    # ==============================
-    # Live mode (from 2026-01-01)
-    # ==============================
     portfolios = load_json(PORTFOLIOS_PATH, None)
     if not portfolios:
         raise RuntimeError("Missing portfolios.json")
