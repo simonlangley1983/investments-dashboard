@@ -2,8 +2,8 @@ name: Update latest.json
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every hour
-  workflow_dispatch: {}   # allows manual run
+    - cron: "0 * * * *"   # hourly
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -12,7 +12,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -27,6 +27,7 @@ jobs:
         run: |
           git config user.name "invest-game-bot"
           git config user.email "invest-game-bot@users.noreply.github.com"
-          git add latest.json state.json
-          git commit -m "Update latest.json" || echo "No changes"
+          git add latest.json || true
+          git add state.json  || true
+          git commit -m "Update latest.json" || echo "No changes to commit"
           git push
