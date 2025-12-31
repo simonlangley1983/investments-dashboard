@@ -1,146 +1,193 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Investments</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
-    .wrap { max-width: 980px; margin: 0 auto; }
+import json
+import os
+import time
+from datetime import datetime, timezone, date
+from urllib.request import urlopen, Request
 
-    .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-    @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+ROOT = os.path.dirname(os.path.abspath(__file__))
+STATE_PATH = os.path.join(ROOT, "state.json")
+LATEST_PATH = os.path.join(ROOT, "latest.json")
+PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
-    .card { border: 1px solid #ddd; border-radius: 14px; padding: 16px; }
-    .h { font-size: 14px; opacity: .7; margin-bottom: 8px; }
-    .v { font-size: 34px; font-weight: 750; margin: 4px 0 8px; }
+STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 
-    .note { margin: 18px 0; padding: 12px 14px; border-radius: 12px; background: #f6f6f6; font-size: 14px; }
-    .meta { margin-top: 18px; font-size: 13px; opacity: .7; }
-    .err { color: #b00020; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    td, th { padding: 6px 4px; border-top: 1px solid #eee; font-size: 13px; }
-    th { opacity: .7; font-weight: 600; text-align: left; }
-    .num { text-align: right; font-variant-numeric: tabular-nums; }
-    .small { font-size: 12px; opacity: .7; margin-top: 8px; }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="grid">
-      <div class="card">
-        <div class="h">Portfolio A — High-Conviction Growth</div>
-        <div class="v" id="aValue">—</div>
-        <div>YTD: <strong id="aYtd">—</strong></div>
-        <div id="aHoldings"></div>
-      </div>
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
-      <div class="card">
-        <div class="h">Portfolio B — Maximum Risk</div>
-        <div class="v" id="bValue">—</div>
-        <div>YTD: <strong id="bYtd">—</strong></div>
-        <div id="bHoldings"></div>
-      </div>
-    </div>
 
-    <div class="note" id="note" style="display:none;"></div>
-    <div class="meta" id="asOf"></div>
-    <div class="meta err" id="err"></div>
-  </div>
+def http_get(url: str, timeout: int = 20) -> str:
+    req = Request(url, headers={"User-Agent": "invest-game-bot"})
+    with urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
 
-  <script>
-    const FEED =
-      "https://raw.githubusercontent.com/simonlangley1983/investments-dashboard/main/latest.json";
 
-    const fmtGBP  = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
-    const fmtGBP0 = (n) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n);
-    const fmtPct  = (n) => `${Number(n).toFixed(2)}%`;
-    const sign    = (n) => (n > 0 ? "+" : "");
+def stooq_close(symbol: str) -> float:
+    url = STOOQ_QUOTE.format(symbol=symbol.lower())
+    csv = http_get(url)
+    lines = [ln.strip() for ln in csv.strip().splitlines() if ln.strip()]
+    if len(lines) < 2:
+        raise RuntimeError(f"No quote lines for {symbol}")
+    header = [h.strip() for h in lines[0].split(",")]
+    row = [c.strip() for c in lines[1].split(",")]
+    data = dict(zip(header, row))
+    if "Close" not in data:
+        raise RuntimeError(f"No Close for {symbol}")
+    px = float(data["Close"])
+    if px <= 0:
+        raise RuntimeError(f"Bad Close for {symbol}: {px}")
+    return px
 
-    function tablePreStart(holdings) {
-      if (!Array.isArray(holdings) || holdings.length === 0) return "";
-      const rows = holdings.map(h => `
-        <tr>
-          <td>${h.ticker}</td>
-          <td class="num">${Number(h.target_weight_pct).toFixed(2)}%</td>
-        </tr>
-      `).join("");
-      return `
-        <table>
-          <thead>
-            <tr>
-              <th>Fund</th>
-              <th class="num">Target weight</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
+
+def load_json(path: str, default):
+    if not os.path.exists(path):
+        return default
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_json(path: str, obj) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=2)
+
+
+def normalise_weights(w: dict) -> dict:
+    s = sum(w.values())
+    if s <= 0:
+        raise RuntimeError("Weights sum to zero")
+    return {k: v / s for k, v in w.items()}
+
+
+def weights_list(weights: dict):
+    w = normalise_weights(weights)
+    return [
+        {"ticker": t, "target_weight_pct": round(wt * 100.0, 2)}
+        for t, wt in sorted(w.items(), key=lambda x: x[1], reverse=True)
+    ]
+
+
+def init_shares(weights: dict, start_gbp: float, usd_to_gbp: float) -> dict:
+    weights = normalise_weights(weights)
+    shares = {}
+    for ticker, wt in weights.items():
+        alloc_gbp = start_gbp * wt
+        px_usd = stooq_close(ticker)
+        px_gbp = px_usd * usd_to_gbp
+        shares[ticker] = alloc_gbp / px_gbp
+    return shares
+
+
+def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: dict):
+    holdings = []
+    total = 0.0
+
+    for ticker, sh in shares.items():
+        px_usd = stooq_close(ticker)
+        value_gbp = sh * px_usd * usd_to_gbp
+
+        prev = prev_values_by_ticker.get(ticker)
+        delta_gbp = 0.0 if prev is None else value_gbp - prev
+        delta_pct = 0.0 if not prev else ((value_gbp / prev) - 1.0) * 100.0
+
+        holdings.append({
+            "ticker": ticker,
+            "value_gbp": round(value_gbp, 2),
+            "delta_gbp": round(delta_gbp, 2),
+            "delta_pct": round(delta_pct, 2),
+        })
+
+        total += value_gbp
+
+    holdings.sort(key=lambda x: x["value_gbp"], reverse=True)
+    return round(total, 2), holdings
+
+
+def write_placeholder():
+    portfolios = load_json(PORTFOLIOS_PATH, {})
+    pA = portfolios.get("portfolio_A", {})
+    pB = portfolios.get("portfolio_B", {})
+
+    latest = {
+        "as_of_utc": utc_now_iso(),
+        "currency": "GBP",
+        "status": "Not started",
+        "starts_on": "2026-01-01",
+        "portfolio_A": {
+            "value_gbp": 1_000_000.00,
+            "ytd_return_pct": 0.00,
+            "holdings": weights_list(pA) if pA else [],
+        },
+        "portfolio_B": {
+            "value_gbp": 1_000_000.00,
+            "ytd_return_pct": 0.00,
+            "holdings": weights_list(pB) if pB else [],
+        },
     }
 
-    function tableLive(holdings) {
-      if (!Array.isArray(holdings) || holdings.length === 0) return "";
-      const rows = holdings.map(h => `
-        <tr>
-          <td>${h.ticker}</td>
-          <td class="num">${fmtGBP0(h.value_gbp)}</td>
-          <td class="num">${sign(h.delta_gbp)}${fmtGBP0(h.delta_gbp)}</td>
-          <td class="num">${sign(h.delta_pct)}${Number(h.delta_pct).toFixed(2)}%</td>
-        </tr>
-      `).join("");
-      return `
-        <table>
-          <thead>
-            <tr>
-              <th>Fund</th>
-              <th class="num">Value</th>
-              <th class="num">Δ £</th>
-              <th class="num">Δ %</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div class="small">Δ is since the previous update.</div>
-      `;
-    }
+    save_json(LATEST_PATH, latest)
+    print(json.dumps(latest, indent=2))
 
-    async function load() {
-      try {
-        const res = await fetch(FEED + "?ts=" + Date.now(), { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const d = await res.json();
 
-        document.getElementById("aValue").textContent = fmtGBP(d.portfolio_A.value_gbp);
-        document.getElementById("bValue").textContent = fmtGBP(d.portfolio_B.value_gbp);
-        document.getElementById("aYtd").textContent = fmtPct(d.portfolio_A.ytd_return_pct);
-        document.getElementById("bYtd").textContent = fmtPct(d.portfolio_B.ytd_return_pct);
+def main():
+    # Hard stop before 2026
+    if date.today() < date(2026, 1, 1):
+        if os.path.exists(STATE_PATH):
+            os.remove(STATE_PATH)
+        write_placeholder()
+        return
 
-        const note = document.getElementById("note");
-        if (d.status === "Not started") {
-          note.style.display = "block";
-          note.textContent = `Challenge starts on ${d.starts_on}. Both portfolios are fixed at £1,000,000 until then.`;
+    portfolios = load_json(PORTFOLIOS_PATH, None)
+    if not portfolios:
+        raise RuntimeError("Missing portfolios.json")
 
-          // show constituent funds + target weights
-          document.getElementById("aHoldings").innerHTML = tablePreStart(d.portfolio_A.holdings);
-          document.getElementById("bHoldings").innerHTML = tablePreStart(d.portfolio_B.holdings);
-        } else {
-          note.style.display = "none";
+    start_gbp = float(portfolios["start_gbp"])
+    pA = portfolios["portfolio_A"]
+    pB = portfolios["portfolio_B"]
 
-          // show live holdings breakdown
-          document.getElementById("aHoldings").innerHTML = tableLive(d.portfolio_A.holdings);
-          document.getElementById("bHoldings").innerHTML = tableLive(d.portfolio_B.holdings);
+    usd_to_gbp = stooq_close("USDGBP")
+
+    prev_latest = load_json(LATEST_PATH, {})
+    prevA = {h["ticker"]: h["value_gbp"] for h in prev_latest.get("portfolio_A", {}).get("holdings", [])}
+    prevB = {h["ticker"]: h["value_gbp"] for h in prev_latest.get("portfolio_B", {}).get("holdings", [])}
+
+    state = load_json(STATE_PATH, {})
+    if "A" not in state or "B" not in state:
+        state = {
+            "created_utc": utc_now_iso(),
+            "A": {"shares": init_shares(pA, start_gbp, usd_to_gbp)},
+            "B": {"shares": init_shares(pB, start_gbp, usd_to_gbp)},
         }
+        save_json(STATE_PATH, state)
 
-        document.getElementById("asOf").textContent = `As of (UTC): ${d.as_of_utc}`;
-        document.getElementById("err").textContent = "";
-      } catch (e) {
-        document.getElementById("err").textContent = "Couldn’t load feed: " + e.message;
-      }
+    a_total, a_holdings = value_with_deltas(state["A"]["shares"], usd_to_gbp, prevA)
+    b_total, b_holdings = value_with_deltas(state["B"]["shares"], usd_to_gbp, prevB)
+
+    latest = {
+        "as_of_utc": utc_now_iso(),
+        "currency": "GBP",
+        "fx_usd_to_gbp": round(usd_to_gbp, 6),
+        "portfolio_A": {
+            "value_gbp": a_total,
+            "ytd_return_pct": round(((a_total / start_gbp) - 1.0) * 100.0, 2),
+            "holdings": a_holdings,
+        },
+        "portfolio_B": {
+            "value_gbp": b_total,
+            "ytd_return_pct": round(((b_total / start_gbp) - 1.0) * 100.0, 2),
+            "holdings": b_holdings,
+        },
     }
 
-    load();
-    setInterval(load, 60_000);
-  </script>
-</body>
-</html>
+    save_json(LATEST_PATH, latest)
+    print(json.dumps(latest, indent=2))
+
+
+if __name__ == "__main__":
+    for i in range(3):
+        try:
+            main()
+            break
+        except Exception:
+            if i == 2:
+                raise
+            time.sleep(3)
