@@ -23,6 +23,13 @@ jobs:
       - name: Run updater
         run: python update.py
 
+      - name: Show files (debug)
+        run: |
+          echo "Repo root:"
+          ls -la
+          echo "Latest preview:"
+          test -f latest.json && head -n 30 latest.json || echo "latest.json missing"
+
       - name: Commit results
         run: |
           git config user.name "invest-game-bot"
