@@ -1,0 +1,30 @@
+{
+  "start_gbp": 1000000,
+  "portfolio_A": {
+    "NVDA.US": 0.20,
+    "MSFT.US": 0.10,
+    "ASML.US": 0.10,
+    "AVGO.US": 0.05,
+    "GOOGL.US": 0.10,
+    "AMZN.US": 0.10,
+    "META.US": 0.05,
+    "QQQ.US": 0.15,
+    "TQQQ.US": 0.05,
+    "PLTR.US": 0.05,
+    "COIN.US": 0.05
+  },
+  "portfolio_B": {
+    "SMCI.US": 0.15,
+    "ARM.US": 0.10,
+    "AMD.US": 0.10,
+    "ALAB.US": 0.05,
+    "TQQQ.US": 0.15,
+    "SOXL.US": 0.10,
+    "SNOW.US": 0.07,
+    "PLTR.US": 0.07,
+    "NET.US": 0.06,
+    "COIN.US": 0.07,
+    "MARA.US": 0.05,
+    "MSTR.US": 0.03
+  }
+}
