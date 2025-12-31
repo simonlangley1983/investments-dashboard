@@ -95,24 +95,32 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
 
 
 def main():
-    # ---- Challenge start gate ----
+    # ==============================
+    # Challenge start gate (HARD)
+    # ==============================
     CHALLENGE_START = date(2026, 1, 1)
     today = date.today()
 
-    # Always publish a valid latest.json, but do NOT fetch prices or initialise holdings before 2026.
     if today < CHALLENGE_START:
+        # Ensure nothing can "start early" even if state.json exists from prior tests
+        if os.path.exists(STATE_PATH):
+            os.remove(STATE_PATH)
+
         placeholder = {
             "as_of_utc": utc_now_iso(),
             "currency": "GBP",
             "status": "Not started",
             "starts_on": "2026-01-01",
-            "portfolio_A": {"value_gbp": 1000000, "ytd_return_pct": 0, "holdings": []},
-            "portfolio_B": {"value_gbp": 1000000, "ytd_return_pct": 0, "holdings": []},
+            "portfolio_A": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
+            "portfolio_B": {"value_gbp": 1000000.00, "ytd_return_pct": 0.00, "holdings": []},
         }
         save_json(LATEST_PATH, placeholder)
         print(json.dumps(placeholder, indent=2))
         return
 
+    # ==============================
+    # Live mode (from 2026-01-01)
+    # ==============================
     portfolios = load_json(PORTFOLIOS_PATH, None)
     if not portfolios:
         raise RuntimeError("Missing portfolios.json")
@@ -121,23 +129,12 @@ def main():
     pA = portfolios["portfolio_A"]
     pB = portfolios["portfolio_B"]
 
-    # FX from Stooq: USDGBP = USD priced in GBP
     usd_to_gbp = stooq_close("USDGBP")
 
-    # Load previous latest.json for deltas
     prev_latest = load_json(LATEST_PATH, {})
-    prevA = (
-        {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_A", {}).get("holdings", [])}
-        if prev_latest
-        else {}
-    )
-    prevB = (
-        {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_B", {}).get("holdings", [])}
-        if prev_latest
-        else {}
-    )
+    prevA = {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_A", {}).get("holdings", [])} if prev_latest else {}
+    prevB = {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_B", {}).get("holdings", [])} if prev_latest else {}
 
-    # Load or init shares (state.json)
     state = load_json(STATE_PATH, {})
     if "A" not in state or "B" not in state:
         state = {
@@ -171,7 +168,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # Tiny retry because free endpoints can hiccup
     for i in range(3):
         try:
             main()
