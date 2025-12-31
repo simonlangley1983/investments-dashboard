@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from urllib.request import urlopen, Request
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -12,7 +12,7 @@ PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 
 
-def utc_now_iso():
+def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
@@ -23,7 +23,6 @@ def http_get(url: str, timeout: int = 20) -> str:
 
 
 def stooq_close(symbol: str) -> float:
-    # Stooq expects lowercase symbols commonly, but works either way.
     url = STOOQ_QUOTE.format(symbol=symbol.lower())
     csv = http_get(url)
     lines = [ln.strip() for ln in csv.strip().splitlines() if ln.strip()]
@@ -54,7 +53,7 @@ def load_json(path: str, default):
         return json.load(f)
 
 
-def save_json(path: str, obj):
+def save_json(path: str, obj) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, sort_keys=False)
 
@@ -81,12 +80,14 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
         delta_gbp = 0.0 if prev is None else (value_gbp - prev)
         delta_pct = 0.0 if (prev is None or prev == 0) else ((value_gbp / prev) - 1.0) * 100.0
 
-        holdings.append({
-            "ticker": ticker,
-            "value_gbp": round(value_gbp, 2),
-            "delta_gbp": round(delta_gbp, 2),
-            "delta_pct": round(delta_pct, 2),
-        })
+        holdings.append(
+            {
+                "ticker": ticker,
+                "value_gbp": round(value_gbp, 2),
+                "delta_gbp": round(delta_gbp, 2),
+                "delta_pct": round(delta_pct, 2),
+            }
+        )
         total += value_gbp
 
     holdings.sort(key=lambda x: x["value_gbp"], reverse=True)
@@ -94,6 +95,24 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
 
 
 def main():
+    # ---- Challenge start gate ----
+    CHALLENGE_START = date(2026, 1, 1)
+    today = date.today()
+
+    # Always publish a valid latest.json, but do NOT fetch prices or initialise holdings before 2026.
+    if today < CHALLENGE_START:
+        placeholder = {
+            "as_of_utc": utc_now_iso(),
+            "currency": "GBP",
+            "status": "Not started",
+            "starts_on": "2026-01-01",
+            "portfolio_A": {"value_gbp": 1000000, "ytd_return_pct": 0, "holdings": []},
+            "portfolio_B": {"value_gbp": 1000000, "ytd_return_pct": 0, "holdings": []},
+        }
+        save_json(LATEST_PATH, placeholder)
+        print(json.dumps(placeholder, indent=2))
+        return
+
     portfolios = load_json(PORTFOLIOS_PATH, None)
     if not portfolios:
         raise RuntimeError("Missing portfolios.json")
@@ -107,8 +126,16 @@ def main():
 
     # Load previous latest.json for deltas
     prev_latest = load_json(LATEST_PATH, {})
-    prevA = {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_A", {}).get("holdings", [])} if prev_latest else {}
-    prevB = {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_B", {}).get("holdings", [])} if prev_latest else {}
+    prevA = (
+        {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_A", {}).get("holdings", [])}
+        if prev_latest
+        else {}
+    )
+    prevB = (
+        {h["ticker"]: float(h["value_gbp"]) for h in prev_latest.get("portfolio_B", {}).get("holdings", [])}
+        if prev_latest
+        else {}
+    )
 
     # Load or init shares (state.json)
     state = load_json(STATE_PATH, {})
@@ -131,25 +158,25 @@ def main():
         "portfolio_A": {
             "value_gbp": a_total,
             "ytd_return_pct": round(((a_total / start_gbp) - 1.0) * 100.0, 2),
-            "holdings": a_holdings
+            "holdings": a_holdings,
         },
         "portfolio_B": {
             "value_gbp": b_total,
             "ytd_return_pct": round(((b_total / start_gbp) - 1.0) * 100.0, 2),
-            "holdings": b_holdings
-        }
+            "holdings": b_holdings,
+        },
     }
     save_json(LATEST_PATH, latest)
     print(json.dumps(latest, indent=2))
 
 
 if __name__ == "__main__":
-    # tiny retry because free endpoints can hiccup
+    # Tiny retry because free endpoints can hiccup
     for i in range(3):
         try:
             main()
             break
-        except Exception as e:
+        except Exception:
             if i == 2:
                 raise
             time.sleep(3)
