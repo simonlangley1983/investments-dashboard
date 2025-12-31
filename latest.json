@@ -1,16 +1,110 @@
 {
-  "as_of_utc": "2025-12-31T18:23:36Z",
+  "as_of_utc": "2025-12-31T18:33:21Z",
   "currency": "GBP",
   "status": "Not started",
   "starts_on": "2026-01-01",
   "portfolio_A": {
     "value_gbp": 1000000.0,
     "ytd_return_pct": 0.0,
-    "holdings": []
+    "holdings": [
+      {
+        "ticker": "NVDA.US",
+        "target_weight_pct": 20.0
+      },
+      {
+        "ticker": "QQQ.US",
+        "target_weight_pct": 15.0
+      },
+      {
+        "ticker": "MSFT.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "ASML.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "GOOGL.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "AMZN.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "AVGO.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "META.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "TQQQ.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "PLTR.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "COIN.US",
+        "target_weight_pct": 5.0
+      }
+    ]
   },
   "portfolio_B": {
     "value_gbp": 1000000.0,
     "ytd_return_pct": 0.0,
-    "holdings": []
+    "holdings": [
+      {
+        "ticker": "SMCI.US",
+        "target_weight_pct": 15.0
+      },
+      {
+        "ticker": "TQQQ.US",
+        "target_weight_pct": 15.0
+      },
+      {
+        "ticker": "ARM.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "AMD.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "SOXL.US",
+        "target_weight_pct": 10.0
+      },
+      {
+        "ticker": "SNOW.US",
+        "target_weight_pct": 7.0
+      },
+      {
+        "ticker": "PLTR.US",
+        "target_weight_pct": 7.0
+      },
+      {
+        "ticker": "COIN.US",
+        "target_weight_pct": 7.0
+      },
+      {
+        "ticker": "NET.US",
+        "target_weight_pct": 6.0
+      },
+      {
+        "ticker": "ALAB.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "MARA.US",
+        "target_weight_pct": 5.0
+      },
+      {
+        "ticker": "MSTR.US",
+        "target_weight_pct": 3.0
+      }
+    ]
   }
 }
