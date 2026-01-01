@@ -1,55 +1,76 @@
 {
-  "as_of_utc": "2025-12-31T23:24:03Z",
+  "as_of_utc": "2026-01-01T09:58:03Z",
   "currency": "GBP",
-  "status": "Not started",
-  "starts_on": "2026-01-01",
+  "fx_usd_to_gbp": 0.742186,
   "portfolio_A": {
     "value_gbp": 1000000.0,
     "ytd_return_pct": 0.0,
     "holdings": [
       {
         "ticker": "NVDA.US",
-        "target_weight_pct": 20.0
+        "value_gbp": 200000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "QQQ.US",
-        "target_weight_pct": 15.0
+        "value_gbp": 150000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "MSFT.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "ASML.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "GOOGL.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "AMZN.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "AVGO.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "META.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "TQQQ.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "PLTR.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "COIN.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       }
     ]
   },
@@ -59,51 +80,75 @@
     "holdings": [
       {
         "ticker": "SMCI.US",
-        "target_weight_pct": 15.0
+        "value_gbp": 150000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "TQQQ.US",
-        "target_weight_pct": 15.0
+        "value_gbp": 150000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "ARM.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "AMD.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "SOXL.US",
-        "target_weight_pct": 10.0
+        "value_gbp": 100000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "SNOW.US",
-        "target_weight_pct": 7.0
+        "value_gbp": 70000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "PLTR.US",
-        "target_weight_pct": 7.0
+        "value_gbp": 70000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "COIN.US",
-        "target_weight_pct": 7.0
+        "value_gbp": 70000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "NET.US",
-        "target_weight_pct": 6.0
+        "value_gbp": 60000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "ALAB.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "MARA.US",
-        "target_weight_pct": 5.0
+        "value_gbp": 50000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       },
       {
         "ticker": "MSTR.US",
-        "target_weight_pct": 3.0
+        "value_gbp": 30000.0,
+        "delta_gbp": 0.0,
+        "delta_pct": 0.0
       }
     ]
   }
