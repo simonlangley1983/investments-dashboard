@@ -87,7 +87,7 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
 
         prev = prev_values_by_ticker.get(ticker)
         delta_gbp = 0.0 if prev is None else value_gbp - prev
-        delta_pct = 0.0 if not prev else ((value_gbp / prev) - 1.0) * 100.0
+        delta_pct = 0.0 if (prev is None or prev == 0.0) else ((value_gbp / prev) - 1.0) * 100.0
 
         holdings.append({
             "ticker": ticker,
@@ -100,6 +100,29 @@ def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: di
 
     holdings.sort(key=lambda x: x["value_gbp"], reverse=True)
     return round(total, 2), holdings
+
+
+def extract_prev_values(prev_latest: dict, key: str) -> dict:
+    """
+    Safely extract ticker->value_gbp from previous latest.json.
+    Handles placeholder mode holdings (which have target_weight_pct but no value_gbp).
+    """
+    out = {}
+    holdings = prev_latest.get(key, {}).get("holdings", [])
+    if not isinstance(holdings, list):
+        return out
+    for h in holdings:
+        if not isinstance(h, dict):
+            continue
+        t = h.get("ticker")
+        v = h.get("value_gbp")
+        if t is None or v is None:
+            continue
+        try:
+            out[t] = float(v)
+        except Exception:
+            continue
+    return out
 
 
 def write_placeholder():
@@ -131,6 +154,7 @@ def write_placeholder():
 def main():
     # Hard stop before 2026
     if date.today() < date(2026, 1, 1):
+        # ensure we don't accidentally "start early"
         if os.path.exists(STATE_PATH):
             os.remove(STATE_PATH)
         write_placeholder()
@@ -146,9 +170,9 @@ def main():
 
     usd_to_gbp = stooq_close("USDGBP")
 
-    prev_latest = load_json(LATEST_PATH, {})
-    prevA = {h["ticker"]: h["value_gbp"] for h in prev_latest.get("portfolio_A", {}).get("holdings", [])}
-    prevB = {h["ticker"]: h["value_gbp"] for h in prev_latest.get("portfolio_B", {}).get("holdings", [])}
+    prev_latest = load_json(LATEST_PATH, {}) or {}
+    prevA = extract_prev_values(prev_latest, "portfolio_A")
+    prevB = extract_prev_values(prev_latest, "portfolio_B")
 
     state = load_json(STATE_PATH, {})
     if "A" not in state or "B" not in state:
