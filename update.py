@@ -54,16 +54,12 @@ PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 
-# map portfolio keys -> state keys (matches your existing state.json)
 PORT_STATE_KEY = {
     "portfolio_A": "A",
     "portfolio_B": "B",
 }
 
-# TTL: refresh cached prices/FX if older than this
 CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
-
-# where we persist the inception allocations in state.json
 INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
 
 
@@ -169,23 +165,27 @@ def stooq_quote(symbol: str) -> dict:
 
 
 # -------------------------
-# Portfolio weights parsing (supports your formats)
+# Portfolio weights parsing
 # -------------------------
+def _is_number(x) -> bool:
+    try:
+        float(x)
+        return True
+    except Exception:
+        return False
+
+
 def extract_weights(pdef: dict) -> dict:
     """
     Supports:
-      1) {"name": "...", "weights": {"NVDA.US": 0.2, ...}}
-      2) {"NVDA.US": 0.2, "MSFT.US": 0.1, ...} (direct mapping)
+      {"name": "...", "weights": {...}}  (your current format)
+      OR direct mapping numeric keys -> weights
     """
     if not isinstance(pdef, dict):
         return {}
-
-    # explicit weights
     w = pdef.get("weights")
     if isinstance(w, dict) and w:
         return {str(k).strip(): float(v) for k, v in w.items() if _is_number(v)}
-
-    # direct mapping: keep only numeric values, ignore common non-weight keys
     out = {}
     for k, v in pdef.items():
         if str(k) in ("name", "key", "holdings"):
@@ -195,21 +195,10 @@ def extract_weights(pdef: dict) -> dict:
     return out
 
 
-def _is_number(x) -> bool:
-    try:
-        float(x)
-        return True
-    except Exception:
-        return False
-
-
 # -------------------------
 # FX conversion (with TTL)
 # -------------------------
 def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
-    """
-    Returns multiplier to convert 1 unit of from_ccy into GBP.
-    """
     c = (from_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -246,9 +235,6 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
 
 
 def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
-    """
-    Returns multiplier to convert 1 GBP into target currency.
-    """
     c = (to_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -323,14 +309,9 @@ def infer_currency_from_ticker(ticker: str) -> str:
 # Shares initialisation (ONE TIME)
 # -------------------------
 def init_state_shares_from_weights(portfolios_root: dict, state: dict):
-    """
-    If state["A"]["shares"] / state["B"]["shares"] missing or empty,
-    initialise them from portfolios.json weights using current prices and FX.
-    """
     start_gbp = portfolios_root.get("start_gbp")
     if start_gbp is None:
         return
-
     start_gbp = float(start_gbp)
 
     for pkey, skey in PORT_STATE_KEY.items():
@@ -353,8 +334,8 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
             ticker = str(ticker).strip()
             ccy = infer_currency_from_ticker(ticker)
-
             allocation_gbp = start_gbp * weight
+
             if ticker.upper() == "CASH":
                 shares["CASH"] = shares.get("CASH", 0.0) + allocation_gbp
                 continue
@@ -362,7 +343,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
             price = price_for_holding(ticker, state)
             gbp_to_ccy = gbp_to_ccy_rate(ccy, state)
             allocation_ccy = allocation_gbp * gbp_to_ccy
-
             qty = allocation_ccy / price if price else 0.0
             shares[ticker] = qty
 
@@ -373,13 +353,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 # Inception allocations (ONE TIME)
 # -------------------------
 def ensure_inception_allocations(portfolios_root: dict, state: dict):
-    """
-    Persist per-ticker inception allocation in GBP for each portfolio ONCE, based on weights + start_gbp.
-
-    Stored as:
-      state["inception_allocations_gbp"]["portfolio_A"][ticker] = allocation_gbp
-      state["inception_allocations_gbp"]["portfolio_B"][ticker] = allocation_gbp
-    """
     start_gbp = portfolios_root.get("start_gbp")
     if start_gbp is None:
         return
@@ -423,14 +396,12 @@ def get_inception_alloc_for(portfolio_key: str, ticker: str, state: dict) -> flo
     if not isinstance(p, dict):
         return 0.0
 
-    # exact key
     if ticker in p:
         try:
             return float(p[ticker])
         except Exception:
             return 0.0
 
-    # case-insensitive fallback
     t = str(ticker).strip().upper()
     for k, v in p.items():
         if str(k).strip().upper() == t:
@@ -442,7 +413,7 @@ def get_inception_alloc_for(portfolio_key: str, ticker: str, state: dict) -> flo
 
 
 # -------------------------
-# Helpers: previous snapshot lookup
+# Previous snapshot lookup
 # -------------------------
 def build_prev_holdings_index(prev_latest: dict, portfolio_key: str) -> dict:
     idx = {}
@@ -468,7 +439,7 @@ def direction_from_delta(d: float) -> str:
 
 
 # -------------------------
-# Valuation (RUNNING TOTAL + daily deltas + totals since start)
+# Valuation
 # -------------------------
 def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict, prev_latest: dict) -> dict:
     skey = PORT_STATE_KEY[portfolio_key]
@@ -512,7 +483,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 
             total_change_gbp = (value_gbp - inception_alloc_gbp) if inception_alloc_gbp else 0.0
             total_change_pct = (total_change_gbp / inception_alloc_gbp * 100.0) if inception_alloc_gbp else 0.0
-
             total_change_gbp = clamp_neg_zero(round(total_change_gbp, 2))
             total_change_pct = clamp_neg_zero(round(total_change_pct, 4))
 
@@ -556,7 +526,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 
         total_change_gbp = (value_gbp - inception_alloc_gbp) if inception_alloc_gbp else 0.0
         total_change_pct = (total_change_gbp / inception_alloc_gbp * 100.0) if inception_alloc_gbp else 0.0
-
         total_change_gbp = clamp_neg_zero(round(total_change_gbp, 2))
         total_change_pct = clamp_neg_zero(round(total_change_pct, 4))
 
@@ -599,7 +568,7 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 
 
 # -------------------------
-# History (daily totals) — update today's row each run
+# History (daily totals)
 # -------------------------
 def upsert_daily_history(latest: dict):
     today = uk_today_iso()
@@ -642,10 +611,7 @@ def main():
     if not isinstance(prev_latest, dict):
         prev_latest = {}
 
-    # ONE-TIME: only if A/B shares missing
     init_state_shares_from_weights(portfolios_root, state)
-
-    # ONE-TIME: inception allocations for per-ticker totals since start
     ensure_inception_allocations(portfolios_root, state)
 
     latest = {
@@ -653,15 +619,13 @@ def main():
         "as_of_uk_date": uk_today_iso(),
     }
 
-    # value portfolios using FIXED quantities from state (A/B shares)
-    for pkey, skey in PORT_STATE_KEY.items():
+    for pkey, _ in PORT_STATE_KEY.items():
         pdef = portfolios_root.get(pkey, {})
         pname = pdef.get("name") if isinstance(pdef, dict) else None
         if not pname:
             pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
         latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
-    # change vs previous snapshot (portfolio totals)
     for pkey, pdata in latest.items():
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
             continue
