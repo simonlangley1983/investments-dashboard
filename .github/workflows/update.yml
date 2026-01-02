@@ -1,9 +1,9 @@
-name: Update portfolio data
+name: Update investment dashboard data
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 23 * * *"  # 23:30 UTC daily (safe "after close" default)
+    - cron: "0 * * * *"   # hourly
 
 permissions:
   contents: write
@@ -11,6 +11,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,19 +27,21 @@ jobs:
         run: |
           python update.py
 
-      - name: Show files + git status
+      - name: Show key outputs (debug)
         run: |
-          echo "---- ls ----"
-          ls -la
+          echo "---- portfolios.json ----"
+          cat portfolios.json || true
+          echo "---- latest.json ----"
+          head -n 60 latest.json || true
           echo "---- history.json ----"
           cat history.json || true
           echo "---- git status ----"
           git status --porcelain
 
-      - name: Commit and push json outputs
+      - name: Commit and push changes
         run: |
           git config user.name "invest-game-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add history.json latest.json state.json
-          git commit -m "Update portfolio snapshots" || echo "No changes to commit"
+          git add latest.json history.json state.json
+          git commit -m "Update dashboard data" || echo "No changes to commit"
           git push
