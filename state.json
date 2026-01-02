@@ -31,7 +31,7 @@
       "MSTR.US": 266.0160205647834
     }
   },
-  "last_run_utc": "2026-01-02T22:28:58Z",
+  "last_run_utc": "2026-01-02T22:48:36Z",
   "price_cache": {
     "NVDA.US": {
       "price": 188.85,
@@ -182,6 +182,35 @@
     "USDGBP": {
       "rate": 0.7431021542531452,
       "updated_at": "2026-01-02T22:28:59Z"
+    }
+  },
+  "inception_allocations_gbp": {
+    "portfolio_A": {
+      "NVDA.US": 200000.0,
+      "MSFT.US": 100000.0,
+      "ASML.US": 100000.0,
+      "AVGO.US": 50000.0,
+      "GOOGL.US": 100000.0,
+      "AMZN.US": 100000.0,
+      "META.US": 50000.0,
+      "QQQ.US": 150000.0,
+      "TQQQ.US": 50000.0,
+      "PLTR.US": 50000.0,
+      "COIN.US": 50000.0
+    },
+    "portfolio_B": {
+      "SMCI.US": 150000.0,
+      "ARM.US": 100000.0,
+      "AMD.US": 100000.0,
+      "ALAB.US": 50000.0,
+      "TQQQ.US": 150000.0,
+      "SOXL.US": 100000.0,
+      "SNOW.US": 70000.0,
+      "PLTR.US": 70000.0,
+      "NET.US": 60000.0,
+      "COIN.US": 70000.0,
+      "MARA.US": 50000.0,
+      "MSTR.US": 30000.0
     }
   }
 }
