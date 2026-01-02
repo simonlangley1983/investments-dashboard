@@ -1,34 +1,22 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (supports holdings OR weights portfolios)
+update.py — Investment game updater (RUNNING TOTAL)
 
-Writes:
-- latest.json  : current snapshot (portfolio totals + holdings)
-- state.json   : caches (prices + fx) + last_run timestamp
-- history.json : ONE row per UK day with portfolio total values
+Key requirement:
+- Hold FIXED quantities (shares) and revalue over time.
+- Record daily totals in history.json.
 
-Portfolio input formats supported (portfolios.json):
-A) Holdings-based (explicit quantities):
-{
-  "portfolio_A": {
-    "name": "Portfolio A",
-    "holdings": [{ "ticker":"CASH", "qty": 1000000, "currency":"GBP" }]
-  }
-}
+This script uses state.json as the source of truth for quantities:
+- Portfolio A shares live at state["A"]["shares"]
+- Portfolio B shares live at state["B"]["shares"]
 
-B) Weights-based (fractional shares, no leftover):
-{
-  "start_gbp": 1000000,
-  "portfolio_A": {
-    "name": "Portfolio A",
-    "weights": { "NVDA.US": 0.2, "MSFT.US": 0.1, ... }
-  }
-}
+Weights in portfolios.json are ONLY used to initialise shares ONCE
+(if state shares don't already exist).
 
-IMPORTANT behavioural note (LIVE-ish daily tracking):
-- history.json contains one row per UK date.
-- Each run will UPDATE (overwrite) today's row with the latest totals.
-  Past days are never changed.
+Outputs:
+- latest.json  : snapshot (portfolio totals + holdings breakdown)
+- state.json   : caches + A/B shares + last_run timestamp
+- history.json : one row per UK date, updated each run for "today"
 """
 
 import csv
@@ -51,6 +39,12 @@ HISTORY_PATH = os.path.join(ROOT, "history.json")
 PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
+
+# map portfolio keys -> state keys (matches your existing state.json)
+PORT_STATE_KEY = {
+    "portfolio_A": "A",
+    "portfolio_B": "B",
+}
 
 
 # -------------------------
@@ -128,6 +122,9 @@ def stooq_quote(symbol: str) -> dict:
 # FX conversion
 # -------------------------
 def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
+    """
+    Returns multiplier to convert 1 unit of from_ccy into GBP.
+    """
     c = (from_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -152,28 +149,20 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
         if cached is not None:
             return cached
         q = stooq_quote("gbpusd")
-        gbp_usd = float(q["close"])
+        gbp_usd = float(q["close"])  # USD per GBP
         if gbp_usd <= 0:
             raise ValueError("Invalid GBPUSD rate from Stooq")
         usd_gbp = 1.0 / gbp_usd
         set_cached("USDGBP", usd_gbp)
         return usd_gbp
 
-    if c == "EUR":
-        cached = get_cached("EURGBP")
-        if cached is not None:
-            return cached
-        q = stooq_quote("eurgbp")
-        eur_gbp = float(q["close"])
-        if eur_gbp <= 0:
-            raise ValueError("Invalid EURGBP rate from Stooq")
-        set_cached("EURGBP", eur_gbp)
-        return eur_gbp
-
     raise ValueError(f"Unsupported currency for FX: {c}")
 
 
 def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
+    """
+    Returns multiplier to convert 1 GBP into target currency.
+    """
     c = (to_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -204,37 +193,12 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
         set_cached("GBPUSD", gbp_usd)
         return gbp_usd
 
-    if c == "EUR":
-        cached = get_cached("GBPEUR")
-        if cached is not None:
-            return cached
-        q = stooq_quote("eurgbp")
-        eur_gbp = float(q["close"])  # GBP per EUR
-        if eur_gbp <= 0:
-            raise ValueError("Invalid EURGBP rate from Stooq")
-        gbp_eur = 1.0 / eur_gbp
-        set_cached("GBPEUR", gbp_eur)
-        return gbp_eur
-
     raise ValueError(f"Unsupported currency for FX: {c}")
 
 
 # -------------------------
-# Portfolio valuation
+# Pricing
 # -------------------------
-def is_cash_ticker(ticker: str) -> bool:
-    return (ticker or "").strip().upper() == "CASH"
-
-
-def infer_currency_from_ticker(ticker: str) -> str:
-    t = (ticker or "").strip().upper()
-    if t == "CASH":
-        return "GBP"
-    if t.endswith(".US"):
-        return "USD"
-    return "GBP"
-
-
 def price_for_holding(ticker: str, state_cache: dict) -> float:
     px_cache = state_cache.setdefault("price_cache", {})
     now = utc_now_iso()
@@ -258,141 +222,142 @@ def price_for_holding(ticker: str, state_cache: dict) -> float:
     return close
 
 
-def build_holdings_from_weights(weights: dict, start_gbp: float, state_cache: dict) -> list:
-    out = []
+def infer_currency_from_ticker(ticker: str) -> str:
+    t = (ticker or "").strip().upper()
+    if t.endswith(".US"):
+        return "USD"
+    if t == "CASH":
+        return "GBP"
+    return "GBP"
 
-    for ticker, w in (weights or {}).items():
-        if ticker is None:
+
+# -------------------------
+# Shares initialisation (ONE TIME)
+# -------------------------
+def init_state_shares_from_weights(portfolios_root: dict, state: dict):
+    """
+    If state["A"]["shares"] / state["B"]["shares"] missing or empty,
+    initialise them from portfolios.json weights using current prices and FX.
+    """
+    start_gbp = portfolios_root.get("start_gbp")
+    if start_gbp is None:
+        return
+
+    start_gbp = float(start_gbp)
+
+    for pkey, skey in PORT_STATE_KEY.items():
+        pdef = portfolios_root.get(pkey)
+        if not isinstance(pdef, dict):
             continue
+        weights = pdef.get("weights")
+        if not isinstance(weights, dict) or not weights:
+            continue
+
+        existing = state.get(skey, {}).get("shares")
+        if isinstance(existing, dict) and len(existing) > 0:
+            # already initialised — do nothing
+            continue
+
+        shares = {}
+        for ticker, w in weights.items():
+            try:
+                weight = float(w)
+            except Exception:
+                continue
+            if weight <= 0:
+                continue
+
+            ticker = str(ticker).strip()
+            ccy = infer_currency_from_ticker(ticker)
+
+            allocation_gbp = start_gbp * weight
+            if ticker.upper() == "CASH":
+                # store cash as GBP amount (optional)
+                shares["CASH"] = shares.get("CASH", 0.0) + allocation_gbp
+                continue
+
+            price = price_for_holding(ticker, state)
+            gbp_to_ccy = gbp_to_ccy_rate(ccy, state)
+            allocation_ccy = allocation_gbp * gbp_to_ccy
+
+            qty = allocation_ccy / price if price else 0.0
+            shares[ticker] = qty
+
+        state.setdefault(skey, {})["shares"] = shares
+
+
+# -------------------------
+# Valuation (RUNNING TOTAL)
+# -------------------------
+def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict) -> dict:
+    """
+    Build holdings + total value using fixed quantities stored in state.
+    """
+    skey = PORT_STATE_KEY[portfolio_key]
+    shares = state.get(skey, {}).get("shares", {})
+    if not isinstance(shares, dict):
+        shares = {}
+
+    holdings = []
+    total_gbp = 0.0
+
+    for ticker, qty in shares.items():
         try:
-            weight = float(w)
+            qty = float(qty)
         except Exception:
             continue
-        if weight <= 0:
+        if qty == 0.0:
             continue
 
         ticker = str(ticker).strip()
         ccy = infer_currency_from_ticker(ticker)
-        allocation_gbp = float(start_gbp) * weight
 
-        if is_cash_ticker(ticker):
-            fx = fx_to_gbp_rate("GBP", state_cache)
-            out.append(
+        if ticker.upper() == "CASH":
+            fx = fx_to_gbp_rate(ccy, state)
+            value_gbp = qty * fx
+            holdings.append(
                 {
                     "ticker": "CASH",
-                    "qty": round(allocation_gbp, 8),
-                    "currency": "GBP",
+                    "qty": round(qty, 8),
+                    "currency": ccy,
                     "price": 1.0,
                     "fx_to_gbp": round(fx, 8),
-                    "value_gbp": round(allocation_gbp, 2),
+                    "value_gbp": round(value_gbp, 2),
                     "type": "cash",
-                    "target_weight": round(weight, 6),
                 }
             )
+            total_gbp += value_gbp
             continue
 
-        price = price_for_holding(ticker, state_cache)
-        gbp_to_ccy = gbp_to_ccy_rate(ccy, state_cache)
-        allocation_ccy = allocation_gbp * gbp_to_ccy
-        qty = allocation_ccy / price if price != 0 else 0.0
+        price = price_for_holding(ticker, state)
+        fx = fx_to_gbp_rate(ccy, state)
+        value_gbp = (qty * price) * fx
 
-        fx_to_gbp = fx_to_gbp_rate(ccy, state_cache)
-        value_gbp = (qty * price) * fx_to_gbp
-
-        out.append(
+        holdings.append(
             {
                 "ticker": ticker,
                 "qty": round(qty, 8),
                 "currency": ccy,
                 "price": round(price, 6),
-                "fx_to_gbp": round(fx_to_gbp, 8),
+                "fx_to_gbp": round(fx, 8),
                 "value_gbp": round(value_gbp, 2),
                 "type": "asset",
-                "target_weight": round(weight, 6),
             }
         )
-
-    return out
-
-
-def value_portfolio(portfolio_key: str, portfolio_def: dict, portfolios_root: dict, state_cache: dict) -> dict:
-    if isinstance(portfolio_def.get("weights"), dict):
-        start_gbp = portfolios_root.get("start_gbp")
-        if start_gbp is None:
-            raise ValueError("portfolios.json uses weights but missing top-level start_gbp")
-        holdings = build_holdings_from_weights(portfolio_def.get("weights", {}), float(start_gbp), state_cache)
-    else:
-        raw = portfolio_def.get("holdings", []) or []
-        norm = []
-        for h in raw:
-            if not isinstance(h, dict):
-                continue
-            ticker = (h.get("ticker") or "").strip()
-            if not ticker:
-                continue
-            try:
-                qty = float(h.get("qty") or 0.0)
-            except Exception:
-                qty = 0.0
-            if qty == 0:
-                continue
-            ccy = (h.get("currency") or infer_currency_from_ticker(ticker)).upper()
-            norm.append({"ticker": ticker, "qty": qty, "currency": ccy})
-
-        holdings = []
-        for h in norm:
-            ticker, qty, ccy = h["ticker"], float(h["qty"]), h["currency"]
-            if is_cash_ticker(ticker):
-                fx = fx_to_gbp_rate(ccy, state_cache)
-                value_gbp = qty * fx
-                holdings.append(
-                    {
-                        "ticker": "CASH",
-                        "qty": round(qty, 8),
-                        "currency": ccy,
-                        "price": 1.0,
-                        "fx_to_gbp": round(fx, 8),
-                        "value_gbp": round(value_gbp, 2),
-                        "type": "cash",
-                    }
-                )
-            else:
-                price = price_for_holding(ticker, state_cache)
-                fx = fx_to_gbp_rate(ccy, state_cache)
-                value_gbp = (qty * price) * fx
-                holdings.append(
-                    {
-                        "ticker": ticker,
-                        "qty": round(qty, 8),
-                        "currency": ccy,
-                        "price": round(price, 6),
-                        "fx_to_gbp": round(fx, 8),
-                        "value_gbp": round(value_gbp, 2),
-                        "type": "asset",
-                    }
-                )
-
-    total_gbp = sum(float(h.get("value_gbp") or 0.0) for h in holdings)
+        total_gbp += value_gbp
 
     return {
         "key": portfolio_key,
-        "name": portfolio_def.get("name") or portfolio_key,
+        "name": portfolio_name,
         "holdings": holdings,
         "total_value_gbp": round(total_gbp, 2),
     }
 
 
 # -------------------------
-# History (daily totals) — LIVE-ish
+# History (daily totals) — update today's row each run
 # -------------------------
 def upsert_daily_history(latest: dict):
-    """
-    One row per UK date.
-
-    - If today exists: overwrite today's portfolio totals with latest totals (LIVE-ish)
-    - If today doesn't exist: append it
-    - Never changes past dates
-    """
     today = uk_today_iso()
     history = load_json(HISTORY_PATH, [])
     if not isinstance(history, list):
@@ -401,24 +366,18 @@ def upsert_daily_history(latest: dict):
     today_row = {"date": today}
     for key, pdata in latest.items():
         if isinstance(pdata, dict) and "total_value_gbp" in pdata:
-            try:
-                today_row[key] = round(float(pdata["total_value_gbp"]), 2)
-            except Exception:
-                pass
+            today_row[key] = round(float(pdata["total_value_gbp"]), 2)
 
     if len(today_row) <= 1:
         return
 
-    # update existing
     for r in history:
         if isinstance(r, dict) and r.get("date") == today:
-            # overwrite today's values so the chart reflects the most recent run
             for k, v in today_row.items():
                 r[k] = v
             save_json(HISTORY_PATH, history)
             return
 
-    # append new day
     history.append(today_row)
     save_json(HISTORY_PATH, history)
 
@@ -439,19 +398,26 @@ def main():
     if not isinstance(prev_latest, dict):
         prev_latest = {}
 
+    # ONE-TIME initialisation: only if A/B shares missing
+    init_state_shares_from_weights(portfolios_root, state)
+
     latest = {
         "as_of_utc": utc_now_iso(),
         "as_of_uk_date": uk_today_iso(),
     }
 
-    for pkey, pdef in portfolios_root.items():
-        if pkey == "start_gbp":
-            continue
-        if not isinstance(pdef, dict):
-            continue
-        latest[pkey] = value_portfolio(pkey, pdef, portfolios_root, state)
+    # value portfolios using FIXED quantities from state
+    for pkey, skey in PORT_STATE_KEY.items():
+        pdef = portfolios_root.get(pkey, {})
+        pname = pdef.get("name") if isinstance(pdef, dict) else None
+        if not pname:
+            # sensible defaults
+            pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
 
-    for pkey, pdata in list(latest.items()):
+        latest[pkey] = value_from_state_shares(pkey, pname, state)
+
+    # change vs previous snapshot
+    for pkey, pdata in latest.items():
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
             continue
         prev_total = prev_latest.get(pkey, {}).get("total_value_gbp")
