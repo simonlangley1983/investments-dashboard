@@ -7,13 +7,15 @@ Writes:
 - state.json   : caches (prices + fx) + last_run timestamp
 - history.json : ONE row per UK day with portfolio total values
 
-Key fix for your issue:
-- history appending auto-detects portfolios by scanning latest.json for any top-level keys
-  whose value is a dict containing "total_value_gbp" (optionally filtered by prefix "portfolio_").
+Key behaviours:
+- History appending auto-detects portfolios by scanning `latest` for any top-level keys
+  where latest[key] is a dict containing "total_value_gbp".
+- No hard-coded portfolio names. No prefix filtering.
+- Prints HISTORY DEBUG lines so you can see exactly what happened in GitHub Actions logs.
 
 Notes:
 - CASH holdings: set ticker to "CASH" and qty as the cash amount in that holding currency.
-- FX support included for GBP, USD, EUR (easy to extend).
+- FX support included for GBP, USD, EUR (extendable).
 """
 
 import csv
@@ -123,8 +125,8 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
     value_gbp = value_in_from_ccy * fx_to_gbp_rate(from_ccy)
 
     Uses Stooq FX tickers:
-      - gbpusd is USD per GBP, so USD->GBP = 1 / (gbpusd close)
-      - eurgbp is GBP per EUR, so EUR->GBP = eurgbp close
+      - gbpusd is USD per GBP, so USD->GBP = 1 / gbpusd
+      - eurgbp is GBP per EUR, so EUR->GBP = eurgbp
     """
     c = (from_ccy or "GBP").upper()
     if c == "GBP":
@@ -179,9 +181,6 @@ def is_cash_ticker(ticker: str) -> bool:
 
 
 def price_for_holding(ticker: str, state_cache: dict) -> float:
-    """
-    Fetch latest close from Stooq, with a simple state cache.
-    """
     px_cache = state_cache.setdefault("price_cache", {})
     now = utc_now_iso()
 
@@ -267,43 +266,49 @@ def append_daily_history(latest: dict):
     """
     Appends ONE row per UK day into history.json.
 
-    Auto-detects portfolios by scanning latest for top-level keys where:
-      latest[key] is a dict AND contains "total_value_gbp"
-
-    This avoids "blank history" when portfolio keys differ from hard-coded names.
+    Auto-detect portfolios by scanning `latest` for:
+      latest[key] is dict AND contains "total_value_gbp".
     """
     today = uk_today_iso()
+
+    # Ensure history file exists and is a list
     history = load_json(HISTORY_PATH, [])
     if not isinstance(history, list):
         history = []
 
-    # If today's entry already exists (even if not last), do nothing.
+    # If today's entry already exists (anywhere), do nothing
     for r in reversed(history):
         if isinstance(r, dict) and r.get("date") == today:
+            print(f"HISTORY DEBUG: already have entry for {today}, skipping")
             return
 
     row = {"date": today}
 
+    detected = []
     for key, pdata in latest.items():
-        if not isinstance(pdata, dict):
-            continue
-        if "total_value_gbp" not in pdata:
-            continue
+        if isinstance(pdata, dict) and "total_value_gbp" in pdata:
+            detected.append(key)
+            try:
+                row[key] = round(float(pdata["total_value_gbp"]), 2)
+            except Exception:
+                pass
 
-        # Optional filter: only record portfolio_* keys
-        # Comment this out if your keys are named differently.
-        if not str(key).startswith("portfolio_"):
-            continue
+    print(f"HISTORY DEBUG: today={today}")
+    print(f"HISTORY DEBUG: detected_portfolio_keys={detected}")
+    print(f"HISTORY DEBUG: row_to_append={row}")
 
-        try:
-            row[key] = round(float(pdata["total_value_gbp"]), 2)
-        except Exception:
-            continue
+    if len(row) <= 1:
+        print("HISTORY DEBUG: nothing to append (no totals found in latest)")
+        return
 
-    # Only append if we captured at least one portfolio value
-    if len(row) > 1:
-        history.append(row)
-        save_json(HISTORY_PATH, history)
+    history.append(row)
+    save_json(HISTORY_PATH, history)
+
+    try:
+        size = os.path.getsize(HISTORY_PATH)
+    except Exception:
+        size = "unknown"
+    print(f"HISTORY DEBUG: appended ok, history.json size={size}")
 
 
 # -------------------------
@@ -327,13 +332,11 @@ def main():
         "as_of_uk_date": uk_today_iso(),
     }
 
-    # Value portfolios
     for pkey, pdef in portfolios.items():
         if not isinstance(pdef, dict):
             continue
         latest[pkey] = value_portfolio(pkey, pdef, state)
 
-    # Optional: change vs previous snapshot (won't break anything if missing)
     for pkey, pdata in list(latest.items()):
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
             continue
@@ -344,14 +347,11 @@ def main():
             except Exception:
                 pass
 
-    # Update state metadata
     state["last_run_utc"] = latest["as_of_utc"]
 
-    # Write outputs
     save_json(LATEST_PATH, latest)
     save_json(STATE_PATH, state)
 
-    # Append ONE daily row to history.json
     append_daily_history(latest)
 
 
