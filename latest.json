@@ -1,18 +1,119 @@
 {
-  "as_of_utc": "2026-01-02T18:03:20Z",
+  "as_of_utc": "2026-01-02T18:23:35Z",
   "as_of_uk_date": "2026-01-02",
   "portfolio_A": {
     "key": "portfolio_A",
-    "name": "Portfolio A",
+    "name": "Portfolio A \u2014 High-Conviction Growth",
     "holdings": [
       {
-        "ticker": "CASH",
-        "qty": 1000000.0,
-        "currency": "GBP",
-        "price": 1.0,
-        "fx_to_gbp": 1.0,
-        "value_gbp": 1000000.0,
-        "type": "cash"
+        "ticker": "NVDA.US",
+        "qty": 1420.89315878,
+        "currency": "USD",
+        "price": 189.44,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 200000.0,
+        "type": "asset",
+        "target_weight": 0.2
+      },
+      {
+        "ticker": "MSFT.US",
+        "qty": 284.84021164,
+        "currency": "USD",
+        "price": 472.5,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "ASML.US",
+        "qty": 115.52730519,
+        "currency": "USD",
+        "price": 1164.98,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "AVGO.US",
+        "qty": 193.90145512,
+        "currency": "USD",
+        "price": 347.05,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "GOOGL.US",
+        "qty": 428.86280759,
+        "currency": "USD",
+        "price": 313.82297,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "AMZN.US",
+        "qty": 595.38992738,
+        "currency": "USD",
+        "price": 226.0485,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "META.US",
+        "qty": 103.2584011,
+        "currency": "USD",
+        "price": 651.7,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "QQQ.US",
+        "qty": 330.0750466,
+        "currency": "USD",
+        "price": 611.62,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 150000.0,
+        "type": "asset",
+        "target_weight": 0.15
+      },
+      {
+        "ticker": "TQQQ.US",
+        "qty": 1294.35468359,
+        "currency": "USD",
+        "price": 51.99,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "PLTR.US",
+        "qty": 399.7712826,
+        "currency": "USD",
+        "price": 168.33,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "COIN.US",
+        "qty": 285.25073121,
+        "currency": "USD",
+        "price": 235.91,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
       }
     ],
     "total_value_gbp": 1000000.0,
@@ -20,16 +121,127 @@
   },
   "portfolio_B": {
     "key": "portfolio_B",
-    "name": "Portfolio B",
+    "name": "Portfolio B \u2014 Maximum Risk",
     "holdings": [
       {
-        "ticker": "CASH",
-        "qty": 1000000.0,
-        "currency": "GBP",
-        "price": 1.0,
-        "fx_to_gbp": 1.0,
-        "value_gbp": 1000000.0,
-        "type": "cash"
+        "ticker": "SMCI.US",
+        "qty": 6521.74123728,
+        "currency": "USD",
+        "price": 30.955,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 150000.0,
+        "type": "asset",
+        "target_weight": 0.15
+      },
+      {
+        "ticker": "ARM.US",
+        "qty": 1173.38376058,
+        "currency": "USD",
+        "price": 114.6999,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "AMD.US",
+        "qty": 610.28884959,
+        "currency": "USD",
+        "price": 220.53,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "ALAB.US",
+        "qty": 375.04563124,
+        "currency": "USD",
+        "price": 179.4275,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "TQQQ.US",
+        "qty": 3883.06405078,
+        "currency": "USD",
+        "price": 51.99,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 150000.0,
+        "type": "asset",
+        "target_weight": 0.15
+      },
+      {
+        "ticker": "SOXL.US",
+        "qty": 2897.45963402,
+        "currency": "USD",
+        "price": 46.45,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 100000.0,
+        "type": "asset",
+        "target_weight": 0.1
+      },
+      {
+        "ticker": "SNOW.US",
+        "qty": 438.0374288,
+        "currency": "USD",
+        "price": 215.075,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 70000.0,
+        "type": "asset",
+        "target_weight": 0.07
+      },
+      {
+        "ticker": "PLTR.US",
+        "qty": 559.67979564,
+        "currency": "USD",
+        "price": 168.33,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 70000.0,
+        "type": "asset",
+        "target_weight": 0.07
+      },
+      {
+        "ticker": "NET.US",
+        "qty": 415.54160449,
+        "currency": "USD",
+        "price": 194.33,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 60000.0,
+        "type": "asset",
+        "target_weight": 0.06
+      },
+      {
+        "ticker": "COIN.US",
+        "qty": 399.3510237,
+        "currency": "USD",
+        "price": 235.91,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 70000.0,
+        "type": "asset",
+        "target_weight": 0.07
+      },
+      {
+        "ticker": "MARA.US",
+        "qty": 6857.23747898,
+        "currency": "USD",
+        "price": 9.8135,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 50000.0,
+        "type": "asset",
+        "target_weight": 0.05
+      },
+      {
+        "ticker": "MSTR.US",
+        "qty": 256.35619048,
+        "currency": "USD",
+        "price": 157.5,
+        "fx_to_gbp": 0.74301381,
+        "value_gbp": 30000.0,
+        "type": "asset",
+        "target_weight": 0.03
       }
     ],
     "total_value_gbp": 1000000.0,
