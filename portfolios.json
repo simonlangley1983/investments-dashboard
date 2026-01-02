@@ -2,21 +2,13 @@
   "portfolio_A": {
     "name": "Portfolio A",
     "holdings": [
-      {
-        "ticker": "CASH",
-        "qty": 1000000,
-        "currency": "GBP"
-      }
+      { "ticker": "CASH", "qty": 1000000, "currency": "GBP" }
     ]
   },
   "portfolio_B": {
     "name": "Portfolio B",
     "holdings": [
-      {
-        "ticker": "CASH",
-        "qty": 1000000,
-        "currency": "GBP"
-      }
+      { "ticker": "CASH", "qty": 1000000, "currency": "GBP" }
     ]
   }
 }
