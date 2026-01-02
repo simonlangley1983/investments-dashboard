@@ -1,18 +1,38 @@
 {
-  "as_of_utc": "2026-01-02T17:36:53Z",
+  "as_of_utc": "2026-01-02T17:54:53Z",
   "as_of_uk_date": "2026-01-02",
   "portfolio_A": {
     "key": "portfolio_A",
-    "name": "portfolio_A",
-    "holdings": [],
-    "total_value_gbp": 0.0,
-    "change_gbp_vs_prev": 0.0
+    "name": "Portfolio A",
+    "holdings": [
+      {
+        "ticker": "CASH",
+        "qty": 1000000.0,
+        "currency": "GBP",
+        "price": 1.0,
+        "fx_to_gbp": 1.0,
+        "value_gbp": 1000000.0,
+        "type": "cash"
+      }
+    ],
+    "total_value_gbp": 1000000.0,
+    "change_gbp_vs_prev": 1000000.0
   },
   "portfolio_B": {
     "key": "portfolio_B",
-    "name": "portfolio_B",
-    "holdings": [],
-    "total_value_gbp": 0.0,
-    "change_gbp_vs_prev": 0.0
+    "name": "Portfolio B",
+    "holdings": [
+      {
+        "ticker": "CASH",
+        "qty": 1000000.0,
+        "currency": "GBP",
+        "price": 1.0,
+        "fx_to_gbp": 1.0,
+        "value_gbp": 1000000.0,
+        "type": "cash"
+      }
+    ],
+    "total_value_gbp": 1000000.0,
+    "change_gbp_vs_prev": 1000000.0
   }
 }
