@@ -1,154 +1,154 @@
 {
-  "as_of_utc": "2026-01-02T08:35:35Z",
+  "as_of_utc": "2026-01-02T09:29:42Z",
   "currency": "GBP",
-  "fx_usd_to_gbp": 0.743173,
+  "fx_usd_to_gbp": 0.742903,
   "portfolio_A": {
-    "value_gbp": 1001329.86,
-    "ytd_return_pct": 0.13,
+    "value_gbp": 1000966.07,
+    "ytd_return_pct": 0.1,
     "holdings": [
       {
         "ticker": "NVDA.US",
-        "value_gbp": 200265.97,
-        "delta_gbp": 179.74,
-        "delta_pct": 0.09
+        "value_gbp": 200193.21,
+        "delta_gbp": -72.76,
+        "delta_pct": -0.04
       },
       {
         "ticker": "QQQ.US",
-        "value_gbp": 150199.48,
-        "delta_gbp": 134.81,
-        "delta_pct": 0.09
+        "value_gbp": 150144.91,
+        "delta_gbp": -54.57,
+        "delta_pct": -0.04
       },
       {
         "ticker": "MSFT.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "ASML.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "GOOGL.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "AMZN.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "AVGO.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "META.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "TQQQ.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "PLTR.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "COIN.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       }
     ]
   },
   "portfolio_B": {
-    "value_gbp": 1001329.86,
-    "ytd_return_pct": 0.13,
+    "value_gbp": 1000966.07,
+    "ytd_return_pct": 0.1,
     "holdings": [
       {
         "ticker": "SMCI.US",
-        "value_gbp": 150199.48,
-        "delta_gbp": 134.81,
-        "delta_pct": 0.09
+        "value_gbp": 150144.91,
+        "delta_gbp": -54.57,
+        "delta_pct": -0.04
       },
       {
         "ticker": "TQQQ.US",
-        "value_gbp": 150199.48,
-        "delta_gbp": 134.81,
-        "delta_pct": 0.09
+        "value_gbp": 150144.91,
+        "delta_gbp": -54.57,
+        "delta_pct": -0.04
       },
       {
         "ticker": "ARM.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "AMD.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "SOXL.US",
-        "value_gbp": 100132.99,
-        "delta_gbp": 89.87,
-        "delta_pct": 0.09
+        "value_gbp": 100096.61,
+        "delta_gbp": -36.38,
+        "delta_pct": -0.04
       },
       {
         "ticker": "SNOW.US",
-        "value_gbp": 70093.09,
-        "delta_gbp": 62.91,
-        "delta_pct": 0.09
+        "value_gbp": 70067.62,
+        "delta_gbp": -25.47,
+        "delta_pct": -0.04
       },
       {
         "ticker": "PLTR.US",
-        "value_gbp": 70093.09,
-        "delta_gbp": 62.91,
-        "delta_pct": 0.09
+        "value_gbp": 70067.62,
+        "delta_gbp": -25.47,
+        "delta_pct": -0.04
       },
       {
         "ticker": "COIN.US",
-        "value_gbp": 70093.09,
-        "delta_gbp": 62.91,
-        "delta_pct": 0.09
+        "value_gbp": 70067.62,
+        "delta_gbp": -25.47,
+        "delta_pct": -0.04
       },
       {
         "ticker": "NET.US",
-        "value_gbp": 60079.79,
-        "delta_gbp": 53.92,
-        "delta_pct": 0.09
+        "value_gbp": 60057.96,
+        "delta_gbp": -21.83,
+        "delta_pct": -0.04
       },
       {
         "ticker": "ALAB.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "MARA.US",
-        "value_gbp": 50066.49,
-        "delta_gbp": 44.93,
-        "delta_pct": 0.09
+        "value_gbp": 50048.3,
+        "delta_gbp": -18.19,
+        "delta_pct": -0.04
       },
       {
         "ticker": "MSTR.US",
-        "value_gbp": 30039.9,
-        "delta_gbp": 26.97,
-        "delta_pct": 0.09
+        "value_gbp": 30028.98,
+        "delta_gbp": -10.92,
+        "delta_pct": -0.04
       }
     ]
   }
