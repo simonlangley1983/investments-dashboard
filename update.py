@@ -10,7 +10,6 @@ Writes:
 Key behaviours:
 - History appending auto-detects portfolios by scanning `latest` for any top-level keys
   where latest[key] is a dict containing "total_value_gbp".
-- No hard-coded portfolio names. No prefix filtering.
 - Prints HISTORY DEBUG lines so you can see exactly what happened in GitHub Actions logs.
 
 Notes:
@@ -315,6 +314,10 @@ def append_daily_history(latest: dict):
 # Main
 # -------------------------
 def main():
+    # DEBUG: prove exactly which portfolios.json file is being read on the runner
+    print("PORTFOLIOS DEBUG: PORTFOLIOS_PATH =", PORTFOLIOS_PATH)
+    print("PORTFOLIOS DEBUG: portfolios.json parsed =", load_json(PORTFOLIOS_PATH, {}))
+
     portfolios = load_json(PORTFOLIOS_PATH, {})
     if not isinstance(portfolios, dict) or not portfolios:
         raise SystemExit("portfolios.json missing or empty")
