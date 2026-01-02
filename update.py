@@ -1,44 +1,76 @@
+#!/usr/bin/env python3
+"""
+update.py — Investment game updater
+
+What this script does
+- Loads portfolio definitions from portfolios.json
+- Fetches latest prices from Stooq (free CSV endpoint)
+- Converts values into GBP using simple FX rates (also from Stooq)
+- Writes:
+    - latest.json  (current snapshot)
+    - state.json   (cache + metadata)
+    - history.json (ONE row per UK day with end-of-day totals, if you schedule it that way)
+
+Expected portfolios.json format (example)
+{
+  "portfolio_A": {
+    "name": "Portfolio A",
+    "holdings": [
+      {"ticker": "aapl.us", "qty": 10, "currency": "USD"},
+      {"ticker": "barc.uk", "qty": 500, "currency": "GBP"},
+      {"ticker": "CASH", "qty": 25000, "currency": "GBP"}
+    ]
+  },
+  "portfolio_B": { ... },
+  "portfolio_C": { ... }
+}
+
+Notes
+- For CASH holdings, use ticker "CASH" (any case) and qty as amount in that currency.
+- Stooq tickers typically look like:
+    - US: aapl.us
+    - UK: barc.uk
+    - ETFs etc vary; you already have these working in your current setup.
+"""
+
+import csv
 import json
 import os
-import time
-from datetime import datetime, timezone, date
-from urllib.request import urlopen, Request
+from datetime import datetime, timezone
+from urllib.request import Request, urlopen
+
+try:
+    from zoneinfo import ZoneInfo  # py3.9+
+except Exception:
+    ZoneInfo = None
+
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 STATE_PATH = os.path.join(ROOT, "state.json")
 LATEST_PATH = os.path.join(ROOT, "latest.json")
+HISTORY_PATH = os.path.join(ROOT, "history.json")
 PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 
 
+# -------------------------
+# Time helpers
+# -------------------------
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def http_get(url: str, timeout: int = 20) -> str:
-    req = Request(url, headers={"User-Agent": "invest-game-bot"})
-    with urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+def uk_today_iso() -> str:
+    # Use real UK local date if available; otherwise fall back to UTC date.
+    if ZoneInfo is not None:
+        return datetime.now(ZoneInfo("Europe/London")).date().isoformat()
+    return datetime.now(timezone.utc).date().isoformat()
 
 
-def stooq_close(symbol: str) -> float:
-    url = STOOQ_QUOTE.format(symbol=symbol.lower())
-    csv = http_get(url)
-    lines = [ln.strip() for ln in csv.strip().splitlines() if ln.strip()]
-    if len(lines) < 2:
-        raise RuntimeError(f"No quote lines for {symbol}")
-    header = [h.strip() for h in lines[0].split(",")]
-    row = [c.strip() for c in lines[1].split(",")]
-    data = dict(zip(header, row))
-    if "Close" not in data:
-        raise RuntimeError(f"No Close for {symbol}")
-    px = float(data["Close"])
-    if px <= 0:
-        raise RuntimeError(f"Bad Close for {symbol}: {px}")
-    return px
-
-
+# -------------------------
+# JSON helpers
+# -------------------------
 def load_json(path: str, default):
     if not os.path.exists(path):
         return default
@@ -46,172 +78,299 @@ def load_json(path: str, default):
         return json.load(f)
 
 
-def save_json(path: str, obj) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2)
+def save_json(path: str, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, sort_keys=False)
+    os.replace(tmp, path)
 
 
-def normalise_weights(w: dict) -> dict:
-    s = sum(w.values())
-    if s <= 0:
-        raise RuntimeError("Weights sum to zero")
-    return {k: v / s for k, v in w.items()}
+# -------------------------
+# HTTP / Stooq
+# -------------------------
+def http_get(url: str, timeout: int = 20) -> str:
+    req = Request(url, headers={"User-Agent": "invest-game-bot"})
+    with urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
 
 
-def weights_list(weights: dict):
-    w = normalise_weights(weights)
-    return [
-        {"ticker": t, "target_weight_pct": round(wt * 100.0, 2)}
-        for t, wt in sorted(w.items(), key=lambda x: x[1], reverse=True)
-    ]
-
-
-def init_shares(weights: dict, start_gbp: float, usd_to_gbp: float) -> dict:
-    weights = normalise_weights(weights)
-    shares = {}
-    for ticker, wt in weights.items():
-        alloc_gbp = start_gbp * wt
-        px_usd = stooq_close(ticker)
-        px_gbp = px_usd * usd_to_gbp
-        shares[ticker] = alloc_gbp / px_gbp
-    return shares
-
-
-def value_with_deltas(shares: dict, usd_to_gbp: float, prev_values_by_ticker: dict):
-    holdings = []
-    total = 0.0
-
-    for ticker, sh in shares.items():
-        px_usd = stooq_close(ticker)
-        value_gbp = sh * px_usd * usd_to_gbp
-
-        prev = prev_values_by_ticker.get(ticker)
-        delta_gbp = 0.0 if prev is None else value_gbp - prev
-        delta_pct = 0.0 if (prev is None or prev == 0.0) else ((value_gbp / prev) - 1.0) * 100.0
-
-        holdings.append({
-            "ticker": ticker,
-            "value_gbp": round(value_gbp, 2),
-            "delta_gbp": round(delta_gbp, 2),
-            "delta_pct": round(delta_pct, 2),
-        })
-
-        total += value_gbp
-
-    holdings.sort(key=lambda x: x["value_gbp"], reverse=True)
-    return round(total, 2), holdings
-
-
-def extract_prev_values(prev_latest: dict, key: str) -> dict:
+def stooq_quote(symbol: str) -> dict:
     """
-    Safely extract ticker->value_gbp from previous latest.json.
-    Handles placeholder mode holdings (which have target_weight_pct but no value_gbp).
+    Returns dict: {date, time, open, high, low, close, volume}
+    Raises ValueError if data is missing.
     """
-    out = {}
-    holdings = prev_latest.get(key, {}).get("holdings", [])
-    if not isinstance(holdings, list):
-        return out
-    for h in holdings:
-        if not isinstance(h, dict):
-            continue
-        t = h.get("ticker")
-        v = h.get("value_gbp")
-        if t is None or v is None:
-            continue
-        try:
-            out[t] = float(v)
-        except Exception:
-            continue
-    return out
+    url = STOOQ_QUOTE.format(symbol=symbol)
+    text = http_get(url)
 
+    # Stooq returns CSV with header row.
+    reader = csv.DictReader(text.splitlines())
+    rows = list(reader)
+    if not rows:
+        raise ValueError(f"No quote rows returned for {symbol}")
 
-def write_placeholder():
-    portfolios = load_json(PORTFOLIOS_PATH, {})
-    pA = portfolios.get("portfolio_A", {})
-    pB = portfolios.get("portfolio_B", {})
+    row = rows[0]
+    # Stooq sometimes returns "N/D" for non-trading / invalid
+    if row.get("Close") in (None, "", "N/D"):
+        raise ValueError(f"No Close for {symbol}: {row}")
 
-    latest = {
-        "as_of_utc": utc_now_iso(),
-        "currency": "GBP",
-        "status": "Not started",
-        "starts_on": "2026-01-01",
-        "portfolio_A": {
-            "value_gbp": 1_000_000.00,
-            "ytd_return_pct": 0.00,
-            "holdings": weights_list(pA) if pA else [],
-        },
-        "portfolio_B": {
-            "value_gbp": 1_000_000.00,
-            "ytd_return_pct": 0.00,
-            "holdings": weights_list(pB) if pB else [],
-        },
+    def to_float(x: str) -> float:
+        if x in (None, "", "N/D"):
+            return float("nan")
+        return float(x)
+
+    return {
+        "symbol": symbol,
+        "date": row.get("Date"),
+        "time": row.get("Time"),
+        "open": to_float(row.get("Open")),
+        "high": to_float(row.get("High")),
+        "low": to_float(row.get("Low")),
+        "close": to_float(row.get("Close")),
+        "volume": to_float(row.get("Volume")),
+        "source": "stooq",
+        "fetched_at": utc_now_iso(),
     }
 
-    save_json(LATEST_PATH, latest)
-    print(json.dumps(latest, indent=2))
+
+# -------------------------
+# FX conversion
+# -------------------------
+def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
+    """
+    Returns FX multiplier to convert 1 unit of from_ccy into GBP.
+    E.g. value_gbp = value_in_from_ccy * fx_to_gbp_rate(from_ccy)
+
+    Uses Stooq FX tickers:
+      - GBPUSD (gbpusd) is "USD per GBP", so USD->GBP = 1 / (GBPUSD)
+      - EURGBP (eurgbp) is "GBP per EUR", so EUR->GBP = EURGBP
+      - GBPJPY (gbpjpy) etc (not currently implemented)
+
+    If from_ccy == GBP => 1.0
+    """
+    c = (from_ccy or "GBP").upper()
+    if c == "GBP":
+        return 1.0
+
+    fx_cache = state_cache.setdefault("fx_cache", {})
+    now = utc_now_iso()
+
+    def get_cached(key: str):
+        v = fx_cache.get(key)
+        if isinstance(v, dict) and "rate" in v:
+            return float(v["rate"])
+        return None
+
+    def set_cached(key: str, rate: float):
+        fx_cache[key] = {"rate": rate, "updated_at": now}
+
+    # USD -> GBP via gbpusd (USD per GBP)
+    if c == "USD":
+        cached = get_cached("USDGBP")
+        if cached is not None:
+            return cached
+        q = stooq_quote("gbpusd")
+        gbp_usd = float(q["close"])
+        if gbp_usd <= 0:
+            raise ValueError("Invalid GBPUSD rate")
+        usd_gbp = 1.0 / gbp_usd
+        set_cached("USDGBP", usd_gbp)
+        return usd_gbp
+
+    # EUR -> GBP via eurgbp (GBP per EUR)
+    if c == "EUR":
+        cached = get_cached("EURGBP")
+        if cached is not None:
+            return cached
+        q = stooq_quote("eurgbp")
+        eur_gbp = float(q["close"])
+        if eur_gbp <= 0:
+            raise ValueError("Invalid EURGBP rate")
+        set_cached("EURGBP", eur_gbp)
+        return eur_gbp
+
+    # Add more if you need them
+    raise ValueError(f"Unsupported currency for FX: {c} (add mapping in fx_to_gbp_rate)")
 
 
-def main():
-    # Hard stop before 2026
-    if date.today() < date(2026, 1, 1):
-        # ensure we don't accidentally "start early"
-        if os.path.exists(STATE_PATH):
-            os.remove(STATE_PATH)
-        write_placeholder()
+# -------------------------
+# Portfolio valuation
+# -------------------------
+def is_cash_ticker(ticker: str) -> bool:
+    return (ticker or "").strip().upper() in ("CASH", "GBP", "USD", "EUR")
+
+
+def price_for_holding(ticker: str, state_cache: dict) -> float:
+    """
+    Fetches latest close from Stooq, with a simple state cache.
+    """
+    px_cache = state_cache.setdefault("price_cache", {})
+    now = utc_now_iso()
+
+    cached = px_cache.get(ticker)
+    if isinstance(cached, dict) and "price" in cached:
+        # We intentionally do NOT enforce freshness here; your scheduler controls that.
+        try:
+            return float(cached["price"])
+        except Exception:
+            pass
+
+    q = stooq_quote(ticker)
+    close = float(q["close"])
+    px_cache[ticker] = {
+        "price": close,
+        "quote_date": q.get("date"),
+        "quote_time": q.get("time"),
+        "updated_at": now,
+        "source": "stooq",
+    }
+    return close
+
+
+def value_portfolio(portfolio_key: str, portfolio_def: dict, state_cache: dict) -> dict:
+    """
+    Returns:
+      {
+        "key": "portfolio_A",
+        "name": "...",
+        "holdings": [...],
+        "total_value_gbp": 123.45
+      }
+    """
+    holdings = portfolio_def.get("holdings", []) or []
+    out_holdings = []
+    total_gbp = 0.0
+
+    for h in holdings:
+        ticker = (h.get("ticker") or "").strip()
+        qty = float(h.get("qty") or 0.0)
+        ccy = (h.get("currency") or "GBP").upper()
+
+        if qty == 0:
+            continue
+
+        if is_cash_ticker(ticker):
+            # For cash, qty is already a currency amount.
+            fx = fx_to_gbp_rate(ccy, state_cache)
+            value_gbp = qty * fx
+            out_holdings.append(
+                {
+                    "ticker": ticker or "CASH",
+                    "qty": round(qty, 8),
+                    "currency": ccy,
+                    "price": 1.0,
+                    "fx_to_gbp": round(fx, 8),
+                    "value_gbp": round(value_gbp, 2),
+                    "type": "cash",
+                }
+            )
+            total_gbp += value_gbp
+            continue
+
+        price = price_for_holding(ticker, state_cache)
+        fx = fx_to_gbp_rate(ccy, state_cache)
+        value_ccy = qty * price
+        value_gbp = value_ccy * fx
+
+        out_holdings.append(
+            {
+                "ticker": ticker,
+                "qty": round(qty, 8),
+                "currency": ccy,
+                "price": round(price, 6),
+                "fx_to_gbp": round(fx, 8),
+                "value_gbp": round(value_gbp, 2),
+                "type": "asset",
+            }
+        )
+        total_gbp += value_gbp
+
+    return {
+        "key": portfolio_key,
+        "name": portfolio_def.get("name") or portfolio_key,
+        "holdings": out_holdings,
+        "total_value_gbp": round(total_gbp, 2),
+    }
+
+
+# -------------------------
+# History (daily totals)
+# -------------------------
+def append_daily_history(latest: dict):
+    """
+    Appends ONE row per UK day into history.json:
+      { date, portfolio_A, portfolio_B, portfolio_C }
+    Skips if today's row already exists.
+    """
+    today = uk_today_iso()
+    history = load_json(HISTORY_PATH, [])
+
+    if history and history[-1].get("date") == today:
         return
 
-    portfolios = load_json(PORTFOLIOS_PATH, None)
-    if not portfolios:
-        raise RuntimeError("Missing portfolios.json")
+    row = {"date": today}
 
-    start_gbp = float(portfolios["start_gbp"])
-    pA = portfolios["portfolio_A"]
-    pB = portfolios["portfolio_B"]
+    for key in ("portfolio_A", "portfolio_B", "portfolio_C"):
+        total = latest.get(key, {}).get("total_value_gbp")
+        if total is not None:
+            row[key] = round(float(total), 2)
 
-    usd_to_gbp = stooq_close("USDGBP")
+    if len(row) > 1:
+        history.append(row)
+        save_json(HISTORY_PATH, history)
 
-    prev_latest = load_json(LATEST_PATH, {}) or {}
-    prevA = extract_prev_values(prev_latest, "portfolio_A")
-    prevB = extract_prev_values(prev_latest, "portfolio_B")
+
+# -------------------------
+# Main
+# -------------------------
+def main():
+    portfolios = load_json(PORTFOLIOS_PATH, {})
+    if not isinstance(portfolios, dict) or not portfolios:
+        raise SystemExit("portfolios.json missing or empty")
 
     state = load_json(STATE_PATH, {})
-    if "A" not in state or "B" not in state:
-        state = {
-            "created_utc": utc_now_iso(),
-            "A": {"shares": init_shares(pA, start_gbp, usd_to_gbp)},
-            "B": {"shares": init_shares(pB, start_gbp, usd_to_gbp)},
-        }
-        save_json(STATE_PATH, state)
+    if not isinstance(state, dict):
+        state = {}
 
-    a_total, a_holdings = value_with_deltas(state["A"]["shares"], usd_to_gbp, prevA)
-    b_total, b_holdings = value_with_deltas(state["B"]["shares"], usd_to_gbp, prevB)
+    prev_latest = load_json(LATEST_PATH, {}) if os.path.exists(LATEST_PATH) else {}
+    if not isinstance(prev_latest, dict):
+        prev_latest = {}
 
     latest = {
         "as_of_utc": utc_now_iso(),
-        "currency": "GBP",
-        "fx_usd_to_gbp": round(usd_to_gbp, 6),
-        "portfolio_A": {
-            "value_gbp": a_total,
-            "ytd_return_pct": round(((a_total / start_gbp) - 1.0) * 100.0, 2),
-            "holdings": a_holdings,
-        },
-        "portfolio_B": {
-            "value_gbp": b_total,
-            "ytd_return_pct": round(((b_total / start_gbp) - 1.0) * 100.0, 2),
-            "holdings": b_holdings,
-        },
+        "as_of_uk_date": uk_today_iso(),
     }
 
+    # Value each portfolio present in portfolios.json (but we’ll still write keys A/B/C if present)
+    for pkey, pdef in portfolios.items():
+        if not isinstance(pdef, dict):
+            continue
+        latest[pkey] = value_portfolio(pkey, pdef, state)
+
+    # Optional: daily change vs previous snapshot (if available)
+    for pkey, pdata in list(latest.items()):
+        if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
+            continue
+        prev_total = None
+        try:
+            prev_total = prev_latest.get(pkey, {}).get("total_value_gbp")
+        except Exception:
+            prev_total = None
+        if prev_total is not None:
+            try:
+                pdata["change_gbp_vs_prev"] = round(float(pdata["total_value_gbp"]) - float(prev_total), 2)
+            except Exception:
+                pass
+
+    # Update state metadata
+    state["last_run_utc"] = latest["as_of_utc"]
+
+    # Write outputs
     save_json(LATEST_PATH, latest)
-    print(json.dumps(latest, indent=2))
+    save_json(STATE_PATH, state)
+
+    # Append ONE daily history row (schedule your daily run after markets close for "end-of-day")
+    append_daily_history(latest)
 
 
 if __name__ == "__main__":
-    for i in range(3):
-        try:
-            main()
-            break
-        except Exception:
-            if i == 2:
-                raise
-            time.sleep(3)
+    main()
