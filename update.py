@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (RUNNING TOTAL + per-holding deltas + TTL caching)
+update.py — Investment game updater (RUNNING TOTAL + per-holding deltas + per-holding totals since start + TTL caching)
 
 Key requirement:
 - Hold FIXED quantities (shares) and revalue over time.
@@ -15,20 +15,20 @@ Weights in portfolios.json are ONLY used to initialise shares ONCE
 
 Adds:
 - TTL cache for prices/FX so deltas update when new data arrives, without hammering Stooq.
-- Per-holding indicator fields in latest.json:
+- Per-holding daily indicator fields in latest.json:
   - change_price_vs_prev
   - change_value_gbp_vs_prev
   - change_pct_vs_prev
   - price_direction: "up" | "down" | "flat"
 
-NEW (fixes "Total % change identical for all tickers"):
-- Persist "inception allocations" per ticker (GBP) ONCE, derived from portfolios.json weights and start_gbp.
-  This is the correct baseline for each holding's "Total % change" since the start of the challenge.
-  (We do NOT rely on inception prices/FX which aren't stored; instead we rely on the known initial GBP allocation.)
+Fixes:
+- Per-holding "Total % change" since start is now *per ticker* (not identical).
+  We persist each ticker's inception GBP allocation ONCE in state.json, based on portfolios.json weights + start_gbp.
+  This gives a clean baseline without needing to store inception prices/FX.
 
 Outputs:
 - latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot
-                 + per-holding total changes since start)
+                + per-holding total changes since start)
 - state.json   : caches + A/B shares + last_run timestamp + inception allocations
 - history.json : one row per UK date, updated each run for "today"
 """
@@ -169,6 +169,41 @@ def stooq_quote(symbol: str) -> dict:
 
 
 # -------------------------
+# Portfolio weights parsing (supports your formats)
+# -------------------------
+def extract_weights(pdef: dict) -> dict:
+    """
+    Supports:
+      1) {"name": "...", "weights": {"NVDA.US": 0.2, ...}}
+      2) {"NVDA.US": 0.2, "MSFT.US": 0.1, ...} (direct mapping)
+    """
+    if not isinstance(pdef, dict):
+        return {}
+
+    # explicit weights
+    w = pdef.get("weights")
+    if isinstance(w, dict) and w:
+        return {str(k).strip(): float(v) for k, v in w.items() if _is_number(v)}
+
+    # direct mapping: keep only numeric values, ignore common non-weight keys
+    out = {}
+    for k, v in pdef.items():
+        if str(k) in ("name", "key", "holdings"):
+            continue
+        if _is_number(v):
+            out[str(k).strip()] = float(v)
+    return out
+
+
+def _is_number(x) -> bool:
+    try:
+        float(x)
+        return True
+    except Exception:
+        return False
+
+
+# -------------------------
 # FX conversion (with TTL)
 # -------------------------
 def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
@@ -302,8 +337,9 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
         pdef = portfolios_root.get(pkey)
         if not isinstance(pdef, dict):
             continue
-        weights = pdef.get("weights")
-        if not isinstance(weights, dict) or not weights:
+
+        weights = extract_weights(pdef)
+        if not weights:
             continue
 
         existing = state.get(skey, {}).get("shares")
@@ -311,11 +347,7 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
             continue  # already initialised
 
         shares = {}
-        for ticker, w in weights.items():
-            try:
-                weight = float(w)
-            except Exception:
-                continue
+        for ticker, weight in weights.items():
             if weight <= 0:
                 continue
 
@@ -342,10 +374,7 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 # -------------------------
 def ensure_inception_allocations(portfolios_root: dict, state: dict):
     """
-    Persist per-ticker inception allocation in GBP for each portfolio ONCE.
-
-    This is the correct baseline for per-ticker "Total % change since start".
-    It avoids relying on missing inception prices.
+    Persist per-ticker inception allocation in GBP for each portfolio ONCE, based on weights + start_gbp.
 
     Stored as:
       state["inception_allocations_gbp"]["portfolio_A"][ticker] = allocation_gbp
@@ -360,27 +389,28 @@ def ensure_inception_allocations(portfolios_root: dict, state: dict):
         return
 
     store = state.setdefault(INCEPTION_ALLOC_KEY, {})
+    if not isinstance(store, dict):
+        state[INCEPTION_ALLOC_KEY] = {}
+        store = state[INCEPTION_ALLOC_KEY]
+
     for pkey in ("portfolio_A", "portfolio_B"):
-        if pkey in store and isinstance(store.get(pkey), dict) and store[pkey]:
-            continue  # already present, don't overwrite
+        existing = store.get(pkey)
+        if isinstance(existing, dict) and existing:
+            continue  # don't overwrite
 
         pdef = portfolios_root.get(pkey)
         if not isinstance(pdef, dict):
             continue
-        weights = pdef.get("weights")
-        if not isinstance(weights, dict) or not weights:
+
+        weights = extract_weights(pdef)
+        if not weights:
             continue
 
         allocs = {}
-        for ticker, w in weights.items():
-            try:
-                weight = float(w)
-            except Exception:
-                continue
+        for ticker, weight in weights.items():
             if weight <= 0:
                 continue
-            t = str(ticker).strip()
-            allocs[t] = round(start_gbp * weight, 8)
+            allocs[str(ticker).strip()] = round(start_gbp * float(weight), 8)
 
         store[pkey] = allocs
 
@@ -392,12 +422,15 @@ def get_inception_alloc_for(portfolio_key: str, ticker: str, state: dict) -> flo
     p = store.get(portfolio_key, {})
     if not isinstance(p, dict):
         return 0.0
-    # try exact, then upper-key match
+
+    # exact key
     if ticker in p:
         try:
             return float(p[ticker])
         except Exception:
             return 0.0
+
+    # case-insensitive fallback
     t = str(ticker).strip().upper()
     for k, v in p.items():
         if str(k).strip().upper() == t:
@@ -435,7 +468,7 @@ def direction_from_delta(d: float) -> str:
 
 
 # -------------------------
-# Valuation (RUNNING TOTAL + deltas + inception totals)
+# Valuation (RUNNING TOTAL + daily deltas + totals since start)
 # -------------------------
 def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict, prev_latest: dict) -> dict:
     skey = PORT_STATE_KEY[portfolio_key]
@@ -477,7 +510,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
             change_value = clamp_neg_zero(round(change_value, 2))
             change_pct = clamp_neg_zero(round(change_pct, 4))
 
-            # Total since start (baseline = inception allocation in GBP)
             total_change_gbp = (value_gbp - inception_alloc_gbp) if inception_alloc_gbp else 0.0
             total_change_pct = (total_change_gbp / inception_alloc_gbp * 100.0) if inception_alloc_gbp else 0.0
 
@@ -497,7 +529,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                     "change_value_gbp_vs_prev": change_value,
                     "change_pct_vs_prev": change_pct,
                     "price_direction": "flat",
-                    # since inception (per ticker)
                     "inception_value_gbp": round(inception_alloc_gbp, 2),
                     "total_change_gbp_since_start": total_change_gbp,
                     "total_change_pct_since_start": total_change_pct,
@@ -523,7 +554,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         change_value = clamp_neg_zero(round(change_value, 2))
         change_pct = clamp_neg_zero(round(change_pct, 4))
 
-        # Total since start (baseline = inception allocation in GBP)
         total_change_gbp = (value_gbp - inception_alloc_gbp) if inception_alloc_gbp else 0.0
         total_change_pct = (total_change_gbp / inception_alloc_gbp * 100.0) if inception_alloc_gbp else 0.0
 
@@ -543,7 +573,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                 "change_value_gbp_vs_prev": change_value,
                 "change_pct_vs_prev": change_pct,
                 "price_direction": direction_from_delta(change_price),
-                # since inception (per ticker)
                 "inception_value_gbp": round(inception_alloc_gbp, 2),
                 "total_change_gbp_since_start": total_change_gbp,
                 "total_change_pct_since_start": total_change_pct,
@@ -552,8 +581,7 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         )
         total_gbp += value_gbp
 
-    # portfolio-level since inception
-    port_total_change_gbp = total_gbp - inception_total_gbp if inception_total_gbp else 0.0
+    port_total_change_gbp = (total_gbp - inception_total_gbp) if inception_total_gbp else 0.0
     port_total_change_pct = (port_total_change_gbp / inception_total_gbp * 100.0) if inception_total_gbp else 0.0
     port_total_change_gbp = clamp_neg_zero(round(port_total_change_gbp, 2))
     port_total_change_pct = clamp_neg_zero(round(port_total_change_pct, 4))
@@ -563,7 +591,6 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         "name": portfolio_name,
         "holdings": holdings,
         "total_value_gbp": round(total_gbp, 2),
-        # since inception (portfolio)
         "inception_value_gbp": round(inception_total_gbp, 2),
         "total_change_gbp_since_start": port_total_change_gbp,
         "total_change_pct_since_start": port_total_change_pct,
@@ -615,10 +642,10 @@ def main():
     if not isinstance(prev_latest, dict):
         prev_latest = {}
 
-    # ONE-TIME initialisation: only if A/B shares missing
+    # ONE-TIME: only if A/B shares missing
     init_state_shares_from_weights(portfolios_root, state)
 
-    # ONE-TIME baseline for per-ticker "Total % change since start"
+    # ONE-TIME: inception allocations for per-ticker totals since start
     ensure_inception_allocations(portfolios_root, state)
 
     latest = {
