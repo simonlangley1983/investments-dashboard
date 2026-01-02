@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-01-02T19:23:06Z",
+  "as_of_utc": "2026-01-02T19:34:13Z",
   "as_of_uk_date": "2026-01-02",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -12,7 +12,10 @@
         "price": 189.44,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 203379.41,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "MSFT.US",
@@ -21,7 +24,10 @@
         "price": 472.5,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 97809.65,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "ASML.US",
@@ -30,7 +36,10 @@
         "price": 1164.98,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 109012.34,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "AVGO.US",
@@ -39,7 +48,10 @@
         "price": 347.05,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 50193.17,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "GOOGL.US",
@@ -48,7 +60,10 @@
         "price": 313.82297,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 100374.76,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "AMZN.US",
@@ -57,7 +72,10 @@
         "price": 226.0485,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 98042.04,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "META.US",
@@ -66,7 +84,10 @@
         "price": 651.7,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 49419.54,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "QQQ.US",
@@ -75,7 +96,10 @@
         "price": 611.62,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 149509.74,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "TQQQ.US",
@@ -84,7 +108,10 @@
         "price": 51.99,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 49362.66,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "PLTR.US",
@@ -93,7 +120,10 @@
         "price": 168.33,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 47403.02,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "COIN.US",
@@ -102,11 +132,14 @@
         "price": 235.91,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 52218.34,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       }
     ],
     "total_value_gbp": 1006724.66,
-    "change_gbp_vs_prev": 6724.66
+    "change_gbp_vs_prev": 0.0
   },
   "portfolio_B": {
     "key": "portfolio_B",
@@ -119,7 +152,10 @@
         "price": 30.955,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 158812.06,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "ARM.US",
@@ -128,7 +164,10 @@
         "price": 114.6999,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 105047.88,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "AMD.US",
@@ -137,7 +176,10 @@
         "price": 220.53,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 103089.27,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "ALAB.US",
@@ -146,7 +188,10 @@
         "price": 179.4275,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 53987.63,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "TQQQ.US",
@@ -155,7 +200,10 @@
         "price": 51.99,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 148087.98,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "SOXL.US",
@@ -164,7 +212,10 @@
         "price": 46.45,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 110639.56,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "SNOW.US",
@@ -173,7 +224,10 @@
         "price": 215.075,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 68709.16,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "PLTR.US",
@@ -182,7 +236,10 @@
         "price": 168.33,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 66364.23,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "NET.US",
@@ -191,7 +248,10 @@
         "price": 194.33,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 59207.74,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       },
       {
         "ticker": "COIN.US",
@@ -200,7 +260,10 @@
         "price": 235.91,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 73105.68,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "MARA.US",
@@ -209,7 +272,10 @@
         "price": 9.8135,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 54701.81,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0
       },
       {
         "ticker": "MSTR.US",
@@ -218,10 +284,13 @@
         "price": 157.5,
         "fx_to_gbp": 0.74301381,
         "value_gbp": 31130.44,
-        "type": "asset"
+        "type": "asset",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": -0.0,
+        "change_pct_vs_prev": -0.0
       }
     ],
     "total_value_gbp": 1032883.44,
-    "change_gbp_vs_prev": 32883.44
+    "change_gbp_vs_prev": 0.0
   }
 }
