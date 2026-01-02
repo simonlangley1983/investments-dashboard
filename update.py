@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (RUNNING TOTAL + per-holding deltas)
+update.py — Investment game updater (RUNNING TOTAL + per-holding deltas + TTL caching)
 
 Key requirement:
 - Hold FIXED quantities (shares) and revalue over time.
 - Record daily totals in history.json.
 
-This script uses state.json as the source of truth for quantities:
-- Portfolio A shares live at state["A"]["shares"]
-- Portfolio B shares live at state["B"]["shares"]
+Quantities source of truth:
+- Portfolio A shares at state["A"]["shares"]
+- Portfolio B shares at state["B"]["shares"]
 
 Weights in portfolios.json are ONLY used to initialise shares ONCE
 (if state shares don't already exist).
+
+Adds:
+- TTL cache for prices/FX so deltas update when new data arrives, without hammering Stooq.
+- Per-holding indicator fields remain in latest.json:
+  - change_price_vs_prev
+  - change_value_gbp_vs_prev
+  - change_pct_vs_prev
+  - price_direction: "up" | "down" | "flat"
 
 Outputs:
 - latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot)
@@ -46,6 +54,9 @@ PORT_STATE_KEY = {
     "portfolio_B": "B",
 }
 
+# TTL: refresh cached prices/FX if older than this
+CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
+
 
 # -------------------------
 # Time helpers
@@ -58,6 +69,37 @@ def uk_today_iso() -> str:
     if ZoneInfo is not None:
         return datetime.now(ZoneInfo("Europe/London")).date().isoformat()
     return datetime.now(timezone.utc).date().isoformat()
+
+
+def parse_iso_z(s: str):
+    if not s or not isinstance(s, str):
+        return None
+    try:
+        # "2026-01-02T18:23:35Z" -> "+00:00"
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def is_fresh(updated_at_iso: str, ttl_seconds: int) -> bool:
+    dt = parse_iso_z(updated_at_iso)
+    if dt is None:
+        return False
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    age = (now - dt).total_seconds()
+    return age >= 0 and age <= ttl_seconds
+
+
+def clamp_neg_zero(x: float, eps: float = 1e-12) -> float:
+    try:
+        xf = float(x)
+    except Exception:
+        return 0.0
+    if abs(xf) < eps:
+        return 0.0
+    return xf
 
 
 # -------------------------
@@ -119,7 +161,7 @@ def stooq_quote(symbol: str) -> dict:
 
 
 # -------------------------
-# FX conversion
+# FX conversion (with TTL)
 # -------------------------
 def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
     """
@@ -134,15 +176,16 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
 
     def get_cached(key: str):
         v = fx_cache.get(key)
-        if isinstance(v, dict) and "rate" in v:
-            try:
-                return float(v["rate"])
-            except Exception:
-                return None
+        if isinstance(v, dict) and "rate" in v and "updated_at" in v:
+            if is_fresh(v.get("updated_at"), CACHE_TTL_SECONDS):
+                try:
+                    return float(v["rate"])
+                except Exception:
+                    return None
         return None
 
     def set_cached(key: str, rate: float):
-        fx_cache[key] = {"rate": rate, "updated_at": now}
+        fx_cache[key] = {"rate": float(rate), "updated_at": now}
 
     if c == "USD":
         cached = get_cached("USDGBP")
@@ -172,15 +215,16 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
 
     def get_cached(key: str):
         v = fx_cache.get(key)
-        if isinstance(v, dict) and "rate" in v:
-            try:
-                return float(v["rate"])
-            except Exception:
-                return None
+        if isinstance(v, dict) and "rate" in v and "updated_at" in v:
+            if is_fresh(v.get("updated_at"), CACHE_TTL_SECONDS):
+                try:
+                    return float(v["rate"])
+                except Exception:
+                    return None
         return None
 
     def set_cached(key: str, rate: float):
-        fx_cache[key] = {"rate": rate, "updated_at": now}
+        fx_cache[key] = {"rate": float(rate), "updated_at": now}
 
     if c == "USD":
         cached = get_cached("GBPUSD")
@@ -197,18 +241,19 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
 
 
 # -------------------------
-# Pricing
+# Pricing (with TTL)
 # -------------------------
 def price_for_holding(ticker: str, state_cache: dict) -> float:
     px_cache = state_cache.setdefault("price_cache", {})
     now = utc_now_iso()
 
     cached = px_cache.get(ticker)
-    if isinstance(cached, dict) and "price" in cached:
-        try:
-            return float(cached["price"])
-        except Exception:
-            pass
+    if isinstance(cached, dict) and "price" in cached and "updated_at" in cached:
+        if is_fresh(cached.get("updated_at"), CACHE_TTL_SECONDS):
+            try:
+                return float(cached["price"])
+            except Exception:
+                pass
 
     q = stooq_quote(ticker)
     close = float(q["close"])
@@ -288,9 +333,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 # Helpers: previous snapshot lookup
 # -------------------------
 def build_prev_holdings_index(prev_latest: dict, portfolio_key: str) -> dict:
-    """
-    Returns {ticker: holding_dict} for previous snapshot for that portfolio.
-    """
     idx = {}
     p = prev_latest.get(portfolio_key)
     if not isinstance(p, dict):
@@ -302,6 +344,15 @@ def build_prev_holdings_index(prev_latest: dict, portfolio_key: str) -> dict:
         if isinstance(h, dict) and h.get("ticker"):
             idx[str(h["ticker"]).strip().upper()] = h
     return idx
+
+
+def direction_from_delta(d: float) -> str:
+    d = clamp_neg_zero(d)
+    if d > 0:
+        return "up"
+    if d < 0:
+        return "down"
+    return "flat"
 
 
 # -------------------------
@@ -340,6 +391,9 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
             change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
             change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
 
+            change_value = clamp_neg_zero(round(change_value, 2))
+            change_pct = clamp_neg_zero(round(change_pct, 4))
+
             holdings.append(
                 {
                     "ticker": "CASH",
@@ -349,9 +403,10 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                     "fx_to_gbp": round(fx, 8),
                     "value_gbp": round(value_gbp, 2),
                     "type": "cash",
-                    "change_value_gbp_vs_prev": round(change_value, 2),
-                    "change_pct_vs_prev": round(change_pct, 4),
                     "change_price_vs_prev": 0.0,
+                    "change_value_gbp_vs_prev": change_value,
+                    "change_pct_vs_prev": change_pct,
+                    "price_direction": "flat",
                 }
             )
             total_gbp += value_gbp
@@ -369,6 +424,10 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
         change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
 
+        change_price = clamp_neg_zero(round(change_price, 6))
+        change_value = clamp_neg_zero(round(change_value, 2))
+        change_pct = clamp_neg_zero(round(change_pct, 4))
+
         holdings.append(
             {
                 "ticker": ticker,
@@ -378,9 +437,10 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                 "fx_to_gbp": round(fx, 8),
                 "value_gbp": round(value_gbp, 2),
                 "type": "asset",
-                "change_price_vs_prev": round(change_price, 6),
-                "change_value_gbp_vs_prev": round(change_value, 2),
-                "change_pct_vs_prev": round(change_pct, 4),
+                "change_price_vs_prev": change_price,
+                "change_value_gbp_vs_prev": change_value,
+                "change_pct_vs_prev": change_pct,
+                "price_direction": direction_from_delta(change_price),
             }
         )
         total_gbp += value_gbp
@@ -451,7 +511,6 @@ def main():
         pname = pdef.get("name") if isinstance(pdef, dict) else None
         if not pname:
             pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
-
         latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
     # change vs previous snapshot (portfolio totals)
@@ -461,7 +520,8 @@ def main():
         prev_total = prev_latest.get(pkey, {}).get("total_value_gbp")
         if prev_total is not None:
             try:
-                pdata["change_gbp_vs_prev"] = round(float(pdata["total_value_gbp"]) - float(prev_total), 2)
+                delta = float(pdata["total_value_gbp"]) - float(prev_total)
+                pdata["change_gbp_vs_prev"] = clamp_neg_zero(round(delta, 2))
             except Exception:
                 pdata["change_gbp_vs_prev"] = 0.0
         else:
