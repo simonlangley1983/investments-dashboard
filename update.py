@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (RUNNING TOTAL)
+update.py — Investment game updater (RUNNING TOTAL + per-holding deltas)
 
 Key requirement:
 - Hold FIXED quantities (shares) and revalue over time.
@@ -14,7 +14,7 @@ Weights in portfolios.json are ONLY used to initialise shares ONCE
 (if state shares don't already exist).
 
 Outputs:
-- latest.json  : snapshot (portfolio totals + holdings breakdown)
+- latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot)
 - state.json   : caches + A/B shares + last_run timestamp
 - history.json : one row per UK date, updated each run for "today"
 """
@@ -255,8 +255,7 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
         existing = state.get(skey, {}).get("shares")
         if isinstance(existing, dict) and len(existing) > 0:
-            # already initialised — do nothing
-            continue
+            continue  # already initialised
 
         shares = {}
         for ticker, w in weights.items():
@@ -272,7 +271,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
             allocation_gbp = start_gbp * weight
             if ticker.upper() == "CASH":
-                # store cash as GBP amount (optional)
                 shares["CASH"] = shares.get("CASH", 0.0) + allocation_gbp
                 continue
 
@@ -287,16 +285,35 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
 
 # -------------------------
-# Valuation (RUNNING TOTAL)
+# Helpers: previous snapshot lookup
 # -------------------------
-def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict) -> dict:
+def build_prev_holdings_index(prev_latest: dict, portfolio_key: str) -> dict:
     """
-    Build holdings + total value using fixed quantities stored in state.
+    Returns {ticker: holding_dict} for previous snapshot for that portfolio.
     """
+    idx = {}
+    p = prev_latest.get(portfolio_key)
+    if not isinstance(p, dict):
+        return idx
+    hs = p.get("holdings")
+    if not isinstance(hs, list):
+        return idx
+    for h in hs:
+        if isinstance(h, dict) and h.get("ticker"):
+            idx[str(h["ticker"]).strip().upper()] = h
+    return idx
+
+
+# -------------------------
+# Valuation (RUNNING TOTAL + deltas)
+# -------------------------
+def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict, prev_latest: dict) -> dict:
     skey = PORT_STATE_KEY[portfolio_key]
     shares = state.get(skey, {}).get("shares", {})
     if not isinstance(shares, dict):
         shares = {}
+
+    prev_idx = build_prev_holdings_index(prev_latest, portfolio_key)
 
     holdings = []
     total_gbp = 0.0
@@ -310,11 +327,19 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
             continue
 
         ticker = str(ticker).strip()
+        tkey = ticker.upper()
         ccy = infer_currency_from_ticker(ticker)
 
-        if ticker.upper() == "CASH":
+        if tkey == "CASH":
             fx = fx_to_gbp_rate(ccy, state)
             value_gbp = qty * fx
+
+            prev = prev_idx.get("CASH")
+            prev_value = float(prev.get("value_gbp")) if isinstance(prev, dict) and prev.get("value_gbp") is not None else None
+
+            change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
+            change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
+
             holdings.append(
                 {
                     "ticker": "CASH",
@@ -324,6 +349,9 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                     "fx_to_gbp": round(fx, 8),
                     "value_gbp": round(value_gbp, 2),
                     "type": "cash",
+                    "change_value_gbp_vs_prev": round(change_value, 2),
+                    "change_pct_vs_prev": round(change_pct, 4),
+                    "change_price_vs_prev": 0.0,
                 }
             )
             total_gbp += value_gbp
@@ -332,6 +360,14 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         price = price_for_holding(ticker, state)
         fx = fx_to_gbp_rate(ccy, state)
         value_gbp = (qty * price) * fx
+
+        prev = prev_idx.get(tkey)
+        prev_price = float(prev.get("price")) if isinstance(prev, dict) and prev.get("price") is not None else None
+        prev_value = float(prev.get("value_gbp")) if isinstance(prev, dict) and prev.get("value_gbp") is not None else None
+
+        change_price = (price - prev_price) if prev_price is not None else 0.0
+        change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
+        change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
 
         holdings.append(
             {
@@ -342,6 +378,9 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
                 "fx_to_gbp": round(fx, 8),
                 "value_gbp": round(value_gbp, 2),
                 "type": "asset",
+                "change_price_vs_prev": round(change_price, 6),
+                "change_value_gbp_vs_prev": round(change_value, 2),
+                "change_pct_vs_prev": round(change_pct, 4),
             }
         )
         total_gbp += value_gbp
@@ -406,17 +445,16 @@ def main():
         "as_of_uk_date": uk_today_iso(),
     }
 
-    # value portfolios using FIXED quantities from state
+    # value portfolios using FIXED quantities from state (A/B shares)
     for pkey, skey in PORT_STATE_KEY.items():
         pdef = portfolios_root.get(pkey, {})
         pname = pdef.get("name") if isinstance(pdef, dict) else None
         if not pname:
-            # sensible defaults
             pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
 
-        latest[pkey] = value_from_state_shares(pkey, pname, state)
+        latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
-    # change vs previous snapshot
+    # change vs previous snapshot (portfolio totals)
     for pkey, pdata in latest.items():
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
             continue
