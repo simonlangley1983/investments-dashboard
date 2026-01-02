@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-01-02T19:50:57Z",
+  "as_of_utc": "2026-01-02T20:30:55Z",
   "as_of_uk_date": "2026-01-02",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -13,10 +13,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 203413.46,
         "type": "asset",
-        "change_price_vs_prev": -0.0626,
-        "change_value_gbp_vs_prev": 34.05,
-        "change_pct_vs_prev": 0.0167,
-        "price_direction": "down"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "MSFT.US",
@@ -26,10 +26,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 97885.29,
         "type": "asset",
-        "change_price_vs_prev": 0.13,
-        "change_value_gbp_vs_prev": 75.64,
-        "change_pct_vs_prev": 0.0773,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "ASML.US",
@@ -39,10 +39,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 109127.49,
         "type": "asset",
-        "change_price_vs_prev": 0.65,
-        "change_value_gbp_vs_prev": 115.15,
-        "change_pct_vs_prev": 0.1056,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "AVGO.US",
@@ -52,10 +52,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 50372.98,
         "type": "asset",
-        "change_price_vs_prev": 1.0699,
-        "change_value_gbp_vs_prev": 179.81,
-        "change_pct_vs_prev": 0.3582,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "GOOGL.US",
@@ -65,10 +65,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 100948.61,
         "type": "asset",
-        "change_price_vs_prev": 1.63703,
-        "change_value_gbp_vs_prev": 573.85,
-        "change_pct_vs_prev": 0.5717,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "AMZN.US",
@@ -78,10 +78,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 98347.54,
         "type": "asset",
-        "change_price_vs_prev": 0.5915,
-        "change_value_gbp_vs_prev": 305.5,
-        "change_pct_vs_prev": 0.3116,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "META.US",
@@ -91,10 +91,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 49553.79,
         "type": "asset",
-        "change_price_vs_prev": 1.445,
-        "change_value_gbp_vs_prev": 134.25,
-        "change_pct_vs_prev": 0.2716,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "QQQ.US",
@@ -104,10 +104,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 150207.88,
         "type": "asset",
-        "change_price_vs_prev": 2.5501,
-        "change_value_gbp_vs_prev": 698.14,
-        "change_pct_vs_prev": 0.467,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "TQQQ.US",
@@ -117,10 +117,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 50004.7,
         "type": "asset",
-        "change_price_vs_prev": 0.65,
-        "change_value_gbp_vs_prev": 642.04,
-        "change_pct_vs_prev": 1.3007,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "PLTR.US",
@@ -130,10 +130,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 47370.28,
         "type": "asset",
-        "change_price_vs_prev": -0.2,
-        "change_value_gbp_vs_prev": -32.74,
-        "change_pct_vs_prev": -0.0691,
-        "price_direction": "down"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "COIN.US",
@@ -143,14 +143,14 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 52536.68,
         "type": "asset",
-        "change_price_vs_prev": 1.32,
-        "change_value_gbp_vs_prev": 318.34,
-        "change_pct_vs_prev": 0.6096,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       }
     ],
     "total_value_gbp": 1009768.7,
-    "change_gbp_vs_prev": 3044.04
+    "change_gbp_vs_prev": 0.0
   },
   "portfolio_B": {
     "key": "portfolio_B",
@@ -164,10 +164,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 160636.37,
         "type": "asset",
-        "change_price_vs_prev": 0.34,
-        "change_value_gbp_vs_prev": 1824.31,
-        "change_pct_vs_prev": 1.1487,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "ARM.US",
@@ -177,10 +177,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 105979.94,
         "type": "asset",
-        "change_price_vs_prev": 0.9601,
-        "change_value_gbp_vs_prev": 932.06,
-        "change_pct_vs_prev": 0.8873,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "AMD.US",
@@ -190,10 +190,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 104408.06,
         "type": "asset",
-        "change_price_vs_prev": 2.71,
-        "change_value_gbp_vs_prev": 1318.79,
-        "change_pct_vs_prev": 1.2793,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "ALAB.US",
@@ -203,10 +203,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 53718.75,
         "type": "asset",
-        "change_price_vs_prev": -0.9825,
-        "change_value_gbp_vs_prev": -268.88,
-        "change_pct_vs_prev": -0.498,
-        "price_direction": "down"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "TQQQ.US",
@@ -216,10 +216,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 150014.11,
         "type": "asset",
-        "change_price_vs_prev": 0.65,
-        "change_value_gbp_vs_prev": 1926.13,
-        "change_pct_vs_prev": 1.3007,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "SOXL.US",
@@ -229,10 +229,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 113196.92,
         "type": "asset",
-        "change_price_vs_prev": 1.05,
-        "change_value_gbp_vs_prev": 2557.36,
-        "change_pct_vs_prev": 2.3114,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "SNOW.US",
@@ -242,10 +242,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 69441.77,
         "type": "asset",
-        "change_price_vs_prev": 2.185,
-        "change_value_gbp_vs_prev": 732.61,
-        "change_pct_vs_prev": 1.0662,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "PLTR.US",
@@ -255,10 +255,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 66318.4,
         "type": "asset",
-        "change_price_vs_prev": -0.2,
-        "change_value_gbp_vs_prev": -45.83,
-        "change_pct_vs_prev": -0.0691,
-        "price_direction": "down"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "NET.US",
@@ -268,10 +268,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 59909.37,
         "type": "asset",
-        "change_price_vs_prev": 2.205,
-        "change_value_gbp_vs_prev": 701.63,
-        "change_pct_vs_prev": 1.185,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "COIN.US",
@@ -281,10 +281,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 73551.35,
         "type": "asset",
-        "change_price_vs_prev": 1.32,
-        "change_value_gbp_vs_prev": 445.67,
-        "change_pct_vs_prev": 0.6096,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "MARA.US",
@@ -294,10 +294,10 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 55462.42,
         "type": "asset",
-        "change_price_vs_prev": 0.1315,
-        "change_value_gbp_vs_prev": 760.61,
-        "change_pct_vs_prev": 1.3905,
-        "price_direction": "up"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       },
       {
         "ticker": "MSTR.US",
@@ -307,13 +307,13 @@
         "fx_to_gbp": 0.74338388,
         "value_gbp": 31138.03,
         "type": "asset",
-        "change_price_vs_prev": -0.04,
-        "change_value_gbp_vs_prev": 7.59,
-        "change_pct_vs_prev": 0.0244,
-        "price_direction": "down"
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat"
       }
     ],
     "total_value_gbp": 1043775.49,
-    "change_gbp_vs_prev": 10892.05
+    "change_gbp_vs_prev": 0.0
   }
 }
