@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-01-02T17:54:53Z",
+  "as_of_utc": "2026-01-02T17:57:14Z",
   "as_of_uk_date": "2026-01-02",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -16,7 +16,7 @@
       }
     ],
     "total_value_gbp": 1000000.0,
-    "change_gbp_vs_prev": 1000000.0
+    "change_gbp_vs_prev": 0.0
   },
   "portfolio_B": {
     "key": "portfolio_B",
@@ -33,6 +33,6 @@
       }
     ],
     "total_value_gbp": 1000000.0,
-    "change_gbp_vs_prev": 1000000.0
+    "change_gbp_vs_prev": 0.0
   }
 }
