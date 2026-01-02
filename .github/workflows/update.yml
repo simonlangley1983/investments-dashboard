@@ -1,19 +1,21 @@
-name: Update latest.json
+name: Update portfolio data
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"   # hourly
-  workflow_dispatch: {}
+    - cron: "30 23 * * *"  # 23:30 UTC daily (safe "after close" default)
 
 permissions:
   contents: write
 
 jobs:
-  run:
+  update:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -21,20 +23,22 @@ jobs:
           python-version: "3.11"
 
       - name: Run updater
-        run: python update.py
-
-      - name: Show files (debug)
         run: |
-          echo "Repo root:"
-          ls -la
-          echo "Latest preview:"
-          test -f latest.json && head -n 30 latest.json || echo "latest.json missing"
+          python update.py
 
-      - name: Commit results
+      - name: Show files + git status
+        run: |
+          echo "---- ls ----"
+          ls -la
+          echo "---- history.json ----"
+          cat history.json || true
+          echo "---- git status ----"
+          git status --porcelain
+
+      - name: Commit and push json outputs
         run: |
           git config user.name "invest-game-bot"
-          git config user.email "invest-game-bot@users.noreply.github.com"
-          git add latest.json || true
-          git add state.json  || true
-          git commit -m "Update latest.json" || echo "No changes to commit"
+          git config user.email "actions@users.noreply.github.com"
+          git add history.json latest.json state.json
+          git commit -m "Update portfolio snapshots" || echo "No changes to commit"
           git push
