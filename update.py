@@ -1,40 +1,14 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (RUNNING TOTAL + per-holding deltas + per-holding totals since start + TTL caching)
-
-Key requirement:
-- Hold FIXED quantities (shares) and revalue over time.
-- Record daily totals in history.json.
-
-Quantities source of truth:
-- Portfolio A shares at state["A"]["shares"]
-- Portfolio B shares at state["B"]["shares"]
-
-Weights in portfolios.json are ONLY used to initialise shares ONCE
-(if state shares don't already exist).
+update.py — Investment game updater
 
 Adds:
-- TTL cache for prices/FX so deltas update when new data arrives, without hammering Stooq.
-- Per-holding daily indicator fields in latest.json:
-  - change_price_vs_prev
-  - change_value_gbp_vs_prev
-  - change_pct_vs_prev
-  - price_direction: "up" | "down" | "flat"
+- Portfolio C daily total -> history.json (from portfolio_c.json)
+- S&P 500 daily total -> history.json (as a £1m notional benchmark using SPY.US)
+- Ensures a baseline row exists in history.json with ALL series starting on 2026-01-01
 
-Fixes:
-- Per-holding "Total % change" since start is now *per ticker* (not identical).
-  We persist each ticker's inception GBP allocation ONCE in state.json, based on portfolios.json weights + start_gbp.
-  This gives a clean baseline without needing to store inception prices/FX.
-
-Outputs:
-- latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot
-                + per-holding total changes since start)
-- state.json   : caches + A/B shares + last_run timestamp + inception allocations
-- history.json : one row per UK date, updated each run for "today"
-
-ADDED (2026-01):
-- Portfolio C total logging into history.json (from portfolio_c.json)
-- S&P 500 benchmark logging into history.json (from benchmarks.json)
+Keeps:
+- Portfolio A/B logic exactly as-is (fixed shares, revalue over time)
 """
 
 import csv
@@ -69,6 +43,10 @@ PORT_STATE_KEY = {
 
 CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
 INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
+
+# BASELINE (must match your challenge start)
+BASELINE_UK_DATE = "2026-01-01"
+BASELINE_GBP = 1_000_000.0
 
 
 # -------------------------
@@ -576,9 +554,9 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 
 
 # -------------------------
-# Benchmark helpers (NEW)
+# NEW: Portfolio C + Benchmark
 # -------------------------
-def load_portfolio_c_total_gbp() -> float:
+def load_portfolio_c_total_gbp():
     c = load_json(PORTFOLIO_C_PATH, None)
     if not isinstance(c, dict):
         return None
@@ -589,7 +567,13 @@ def load_portfolio_c_total_gbp() -> float:
         return None
 
 
-def load_sp500_total_gbp(state: dict) -> float:
+def ensure_sp500_benchmark_qty(state: dict) -> dict:
+    """
+    Creates a fixed benchmark position (qty shares) once:
+      qty = (BASELINE_GBP converted to USD at start FX) / start_price
+    Then each run:
+      value_gbp = qty * price * fx_to_gbp
+    """
     b = load_json(BENCHMARKS_PATH, None)
     if not isinstance(b, dict):
         return None
@@ -600,47 +584,75 @@ def load_sp500_total_gbp(state: dict) -> float:
     if not ticker:
         return None
 
-    # Assume USD unless .UK etc; ^SPX is effectively USD
-    ccy = infer_currency_from_ticker(ticker)
-    if ticker.startswith("^"):
-        ccy = "USD"
+    bench = state.setdefault("benchmarks", {})
+    sp_state = bench.setdefault("sp500", {})
 
-    price = price_for_holding(ticker, state)
-    fx = fx_to_gbp_rate(ccy, state)
+    if sp_state.get("ticker") != ticker:
+        # if ticker changes, reset benchmark state
+        sp_state.clear()
 
-    # baseline is "£1m invested in benchmark at start" concept:
-    # BUT for history plotting we just want a GBP series comparable to A/B/C.
-    # simplest: store a notional £1m -> shares at baseline, BUT we don't have that here yet.
-    #
-    # For now, we store: benchmark value = £1m * (price_now / price_at_start).
-    # We need start price persisted once in state.
-    bench_state = state.setdefault("benchmarks", {})
-    sp_state = bench_state.setdefault("sp500", {})
+    sp_state["ticker"] = ticker
 
-    start_price = sp_state.get("start_price")
-    start_fx = sp_state.get("start_fx_to_gbp")
+    if "qty" in sp_state and sp_state.get("qty") is not None:
+        return sp_state
 
-    if start_price is None or start_fx is None:
-        # initialise baseline on first run
-        sp_state["start_price"] = float(price)
-        sp_state["start_fx_to_gbp"] = float(fx)
-        sp_state["start_value_gbp"] = 1000000.0
-        return 1000000.0
+    # Initialise
+    ccy = infer_currency_from_ticker(ticker)  # SPY.US -> USD
+    start_price = price_for_holding(ticker, state)
+    gbp_to_usd = gbp_to_ccy_rate(ccy, state)  # USD per GBP
+    start_alloc_usd = BASELINE_GBP * gbp_to_usd
+    qty = start_alloc_usd / start_price if start_price else 0.0
+
+    sp_state["start_uk_date"] = BASELINE_UK_DATE
+    sp_state["start_price"] = float(start_price)
+    sp_state["start_gbp_to_ccy"] = float(gbp_to_usd)
+    sp_state["qty"] = float(qty)
+    sp_state["start_value_gbp"] = float(BASELINE_GBP)
+
+    return sp_state
+
+
+def sp500_value_gbp(state: dict):
+    sp_state = ensure_sp500_benchmark_qty(state)
+    if not isinstance(sp_state, dict):
+        return None
+
+    ticker = sp_state.get("ticker")
+    qty = sp_state.get("qty")
+    if not ticker or qty is None:
+        return None
 
     try:
-        start_price = float(start_price)
-        start_fx = float(start_fx)
-        start_value = float(sp_state.get("start_value_gbp", 1000000.0))
+        qty = float(qty)
     except Exception:
-        sp_state["start_price"] = float(price)
-        sp_state["start_fx_to_gbp"] = float(fx)
-        sp_state["start_value_gbp"] = 1000000.0
-        return 1000000.0
+        return None
 
-    # Benchmark return in local terms, then adjust FX relative to start
-    # This approximates: GBP value evolves with both index move + FX move
-    ratio = (price * fx) / (start_price * start_fx) if (start_price * start_fx) else 1.0
-    return float(start_value) * float(ratio)
+    ccy = infer_currency_from_ticker(ticker)
+    price = price_for_holding(ticker, state)
+    fx = fx_to_gbp_rate(ccy, state)  # USD->GBP
+
+    return float(qty) * float(price) * float(fx)
+
+
+# -------------------------
+# NEW: Ensure baseline row exists in history.json
+# -------------------------
+def ensure_baseline_history(history: list):
+    exists = any(isinstance(r, dict) and r.get("date") == BASELINE_UK_DATE for r in history)
+    if exists:
+        return history
+
+    history.append(
+        {
+            "date": BASELINE_UK_DATE,
+            "portfolio_A": round(BASELINE_GBP, 2),
+            "portfolio_B": round(BASELINE_GBP, 2),
+            "portfolio_C": round(BASELINE_GBP, 2),
+            "benchmark_sp500": round(BASELINE_GBP, 2),
+        }
+    )
+    history.sort(key=lambda r: r.get("date", ""))
+    return history
 
 
 # -------------------------
@@ -652,34 +664,37 @@ def upsert_daily_history(latest: dict, state: dict):
     if not isinstance(history, list):
         history = []
 
-    today_row = {"date": today}
+    # Ensure baseline exists so all 4 lines start together
+    history = ensure_baseline_history(history)
 
-    # Existing: A/B totals from latest.json
-    for key, pdata in latest.items():
-        if isinstance(pdata, dict) and "total_value_gbp" in pdata:
-            today_row[key] = round(float(pdata["total_value_gbp"]), 2)
-
-    # NEW: Portfolio C total (from portfolio_c.json)
+    # Collect today values
+    a_total = latest.get("portfolio_A", {}).get("total_value_gbp")
+    b_total = latest.get("portfolio_B", {}).get("total_value_gbp")
     c_total = load_portfolio_c_total_gbp()
-    if c_total is not None:
-        today_row["portfolio_C"] = round(float(c_total), 2)
+    sp_total = sp500_value_gbp(state)
 
-    # NEW: S&P500 notional £1m benchmark
-    sp_total = load_sp500_total_gbp(state)
-    if sp_total is not None:
-        today_row["benchmark_sp500"] = round(float(sp_total), 2)
-
-    if len(today_row) <= 1:
+    # Only write today's row if we have ALL 4 values
+    if a_total is None or b_total is None or c_total is None or sp_total is None:
+        save_json(HISTORY_PATH, history)
         return
 
+    today_row = {
+        "date": today,
+        "portfolio_A": round(float(a_total), 2),
+        "portfolio_B": round(float(b_total), 2),
+        "portfolio_C": round(float(c_total), 2),
+        "benchmark_sp500": round(float(sp_total), 2),
+    }
+
+    # Upsert
     for r in history:
         if isinstance(r, dict) and r.get("date") == today:
-            for k, v in today_row.items():
-                r[k] = v
+            r.update(today_row)
             save_json(HISTORY_PATH, history)
             return
 
     history.append(today_row)
+    history.sort(key=lambda r: r.get("date", ""))
     save_json(HISTORY_PATH, history)
 
 
@@ -732,7 +747,7 @@ def main():
     save_json(LATEST_PATH, latest)
     save_json(STATE_PATH, state)
 
-    # UPDATED signature (passes state so benchmark baseline can be persisted)
+    # NEW: daily history now includes A/B/C/SP500
     upsert_daily_history(latest, state)
 
 
