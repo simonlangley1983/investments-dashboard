@@ -31,7 +31,7 @@
       "MSTR.US": 266.0160205647834
     }
   },
-  "last_run_utc": "2026-01-05T22:29:40Z",
+  "last_run_utc": "2026-01-05T22:39:49Z",
   "price_cache": {
     "NVDA.US": {
       "price": 188.12,
@@ -175,52 +175,52 @@
     },
     "SPY.US": {
       "price": 687.7,
+      "updated_at": "2026-01-05T22:39:51Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "22:00:19",
-      "updated_at": "2026-01-05T21:44:17Z",
-      "source": "stooq"
+      "quote_time": "22:00:19"
     },
     "EWJV.US": {
       "price": 40.685,
+      "updated_at": "2026-01-05T22:39:49Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "22:00:19",
-      "updated_at": "2026-01-05T21:44:14Z",
-      "source": "stooq"
+      "quote_time": "22:00:19"
     },
     "ISF.UK": {
       "price": 973.3,
+      "updated_at": "2026-01-05T22:39:50Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "17:35:20",
-      "updated_at": "2026-01-05T21:44:14Z",
-      "source": "stooq"
+      "quote_time": "17:35:20"
     },
     "SMEA.UK": {
       "price": 8278.0,
+      "updated_at": "2026-01-05T22:39:50Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "17:35:06",
-      "updated_at": "2026-01-05T21:44:15Z",
-      "source": "stooq"
+      "quote_time": "17:35:06"
     },
     "AGG.US": {
       "price": 100.035,
+      "updated_at": "2026-01-05T22:39:51Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "22:00:18",
-      "updated_at": "2026-01-05T21:44:16Z",
-      "source": "stooq"
+      "quote_time": "22:00:18"
     },
     "FXI.US": {
       "price": 39.93,
+      "updated_at": "2026-01-05T22:39:52Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "22:00:18",
-      "updated_at": "2026-01-05T21:44:18Z",
-      "source": "stooq"
+      "quote_time": "22:00:18"
     },
     "VGT.US": {
       "price": 757.42,
+      "updated_at": "2026-01-05T22:39:52Z",
+      "source": "stooq",
       "quote_date": "2026-01-05",
-      "quote_time": "22:00:19",
-      "updated_at": "2026-01-05T21:44:20Z",
-      "source": "stooq"
+      "quote_time": "22:00:19"
     }
   },
   "fx_cache": {
