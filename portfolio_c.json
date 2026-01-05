@@ -1,15 +1,11 @@
 {
   "key": "portfolio_C",
-  "name": "Portfolio C — Simon (Scaled)",
+  "name": "SL scaled portfolio",
   "holdings": [
-    {
-      "ticker": "VUSA.UK",
-      "value_gbp": 220829.00,
-      "total_change_gbp_since_start": 5120.00,
-      "total_change_pct_since_start": 2.37
-    }
+    { "ticker": "POLARTECH.GBP", "value_gbp": 250000 },
+    { "ticker": "VANGUARDUK.GBP", "value_gbp": 250000 },
+    { "ticker": "JUPITERCHINA.GBP", "value_gbp": 250000 },
+    { "ticker": "OTHER.GBP", "value_gbp": 250000 }
   ],
-  "total_value_gbp": 1005120.00,
-  "total_change_gbp_since_start": 5120.00,
-  "total_change_pct_since_start": 0.51
+  "total_value_gbp": 1000000
 }
