@@ -1,11 +1,57 @@
 {
   "key": "portfolio_C",
   "name": "SL scaled portfolio",
+  "as_of_uk_date": "2026-01-01",
+  "baseline_total_gbp": 1000000,
   "holdings": [
-    { "ticker": "POLARTECH.GBP", "value_gbp": 250000 },
-    { "ticker": "VANGUARDUK.GBP", "value_gbp": 250000 },
-    { "ticker": "JUPITERCHINA.GBP", "value_gbp": 250000 },
-    { "ticker": "OTHER.GBP", "value_gbp": 250000 }
+    {
+      "ticker": "POLAR_GBL_TECH_GBP",
+      "name": "Polar Capital Global Technology I GBP",
+      "weight": 0.11163138,
+      "value_gbp": 111631.38
+    },
+    {
+      "ticker": "POLAR_JAP_VAL_SH_INC_GBP",
+      "name": "Polar Capital Jap Val SH Inc GBP",
+      "weight": 0.24916301,
+      "value_gbp": 249163.01
+    },
+    {
+      "ticker": "VANG_FTSE_UK_EQ_INC_INDEX_A",
+      "name": "Vanguard FTSE UK Eq Inc Index A Acc",
+      "weight": 0.22080222,
+      "value_gbp": 220802.22
+    },
+    {
+      "ticker": "ARTEMIS_SMTGARP_EUR_EQTY_I_ACC",
+      "name": "Artemis SmrtGARP Eurp Eqty I Acc",
+      "weight": 0.07051059,
+      "value_gbp": 70510.59
+    },
+    {
+      "ticker": "AXA_FRAMLINGTON_MLY_INC_ZM_INC",
+      "name": "AXA Framlington Mly Inc Zm Inc",
+      "weight": 0.00442189,
+      "value_gbp": 4421.89
+    },
+    {
+      "ticker": "JPM_US_RESRCH_ENHNCD_INDEX_EQ_E",
+      "name": "JPM US Resrch Enhncd Index Eq E Acc",
+      "weight": 0.11539147,
+      "value_gbp": 115391.47
+    },
+    {
+      "ticker": "JUPITER_CHINA_I_INC",
+      "name": "Jupiter China I Inc",
+      "weight": 0.10189433,
+      "value_gbp": 101894.33
+    },
+    {
+      "ticker": "LG_GBL_TECHNOLOGY_IDX_TRST_I_ACC",
+      "name": "L&G Gbl Technology Idx Trst I Acc",
+      "weight": 0.12618511,
+      "value_gbp": 126185.11
+    }
   ],
   "total_value_gbp": 1000000
 }
