@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-01-05T20:34:15Z",
+  "as_of_utc": "2026-01-05T21:14:45Z",
   "as_of_uk_date": "2026-01-05",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -415,47 +415,5 @@
     "total_change_pct_since_start": 5.271,
     "total_direction": "up",
     "change_gbp_vs_prev": 0.0
-  },
-  "portfolio_C": {
-    "key": "portfolio_C",
-    "name": "Portfolio C",
-    "holdings": [],
-    "total_value_gbp": 0.0,
-    "inception_value_gbp": 0.0,
-    "total_change_gbp_since_start": 0.0,
-    "total_change_pct_since_start": 0.0,
-    "total_direction": "flat",
-    "change_gbp_vs_prev": 0.0
-  },
-  "benchmarks": {
-    "sp500": {
-      "key": "sp500",
-      "name": "S&P 500",
-      "ticker": "SPY.US",
-      "holdings": [
-        {
-          "ticker": "SPY.US",
-          "qty": 1968.82154148,
-          "currency": "USD",
-          "price": 687.975,
-          "fx_to_gbp": 0.73827981,
-          "value_gbp": 1000000.0,
-          "type": "asset",
-          "change_price_vs_prev": 0.0,
-          "change_value_gbp_vs_prev": 0.0,
-          "change_pct_vs_prev": 0.0,
-          "price_direction": "flat",
-          "inception_value_gbp": 1000000.0,
-          "total_change_gbp_since_start": 0.0,
-          "total_change_pct_since_start": 0.0,
-          "total_direction": "flat"
-        }
-      ],
-      "total_value_gbp": 1000000.0,
-      "inception_value_gbp": 1000000.0,
-      "total_change_gbp_since_start": 0.0,
-      "total_change_pct_since_start": 0.0,
-      "total_direction": "flat"
-    }
   }
 }
