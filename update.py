@@ -1,16 +1,24 @@
 #!/usr/bin/env python3
 """
-update.py — Investment game updater (RUNNING TOTAL + per-holding deltas + per-holding totals since start + TTL caching)
+update.py — Investment game updater (fixed shares + daily deltas + totals since start + TTL caching)
 
-- A/B: from portfolios.json weights (init shares once), then fixed shares revalued.
-- C: from portfolio_c.json weights (init shares once), then fixed shares revalued.
-- S&P500 benchmark: SPY.US fixed shares (init once) representing £1m at inception.
+Key requirements:
+- Hold FIXED quantities (shares) and revalue over time.
+- Record daily totals in history.json.
+- Provide per-holding daily change vs previous snapshot.
+- Provide per-holding totals since start (per ticker).
+
+Portfolios:
+- A/B definitions + weights live in portfolios.json (used ONLY to initialise shares once)
+- C definition + weights live in portfolio_c.json (used ONLY to initialise shares once)
+- S&P 500 benchmark tracked via SPY.US fixed shares (initialised once)
 
 Outputs:
-- latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot
-                + per-holding total changes since start) + benchmarks.sp500
+- latest.json  : snapshot (A/B/C totals + holdings breakdown + per-holding deltas vs prev
+                + per-holding totals since start + benchmark snapshot)
 - state.json   : caches + A/B/C shares + benchmark shares + inception allocations
-- history.json : one row per UK date, updated each run for "today" (A/B/C/benchmark_sp500)
+- history.json : one row per UK date, updated each run for "today"
+                (portfolio_A, portfolio_B, portfolio_C, benchmark_sp500) — writes what it has (no gating)
 """
 
 import csv
@@ -32,23 +40,23 @@ LATEST_PATH = os.path.join(ROOT, "latest.json")
 HISTORY_PATH = os.path.join(ROOT, "history.json")
 PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
-# NEW
+# Separate definition files
 PORTFOLIO_C_PATH = os.path.join(ROOT, "portfolio_c.json")
 BENCHMARKS_PATH = os.path.join(ROOT, "benchmarks.json")
 
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
+
+CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
+INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
+
+BASELINE_GBP = 1_000_000.0
+BASELINE_UK_DATE = "2026-01-01"
 
 PORT_STATE_KEY = {
     "portfolio_A": "A",
     "portfolio_B": "B",
     "portfolio_C": "C",
 }
-
-CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
-INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
-
-BASELINE_GBP = 1_000_000.0
-BASELINE_DATE = "2026-01-01"
 
 
 # -------------------------
@@ -299,16 +307,16 @@ def infer_currency_from_ticker(ticker: str) -> str:
 # Shares initialisation (ONE TIME)
 # -------------------------
 def init_state_shares_from_weights(portfolios_root: dict, state: dict):
-    start_gbp = float(portfolios_root.get("start_gbp", BASELINE_GBP))
+    """
+    Initialise shares ONCE if missing:
+      - A/B from portfolios.json weights using portfolios_root["start_gbp"]
+      - C from portfolio_c.json weights using portfolio_c["start_gbp"] (default £1m)
+    """
+    start_gbp_ab = float(portfolios_root.get("start_gbp", BASELINE_GBP))
 
-    for pkey, skey in PORT_STATE_KEY.items():
-        if pkey == "portfolio_C":
-            pdef = load_json(PORTFOLIO_C_PATH, {})
-            port_start = float(pdef.get("start_gbp", BASELINE_GBP))
-        else:
-            pdef = portfolios_root.get(pkey, {})
-            port_start = start_gbp
-
+    # A/B
+    for pkey in ("portfolio_A", "portfolio_B"):
+        pdef = portfolios_root.get(pkey)
         if not isinstance(pdef, dict):
             continue
 
@@ -316,9 +324,10 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
         if not weights:
             continue
 
+        skey = PORT_STATE_KEY[pkey]
         existing = state.get(skey, {}).get("shares")
         if isinstance(existing, dict) and len(existing) > 0:
-            continue  # already initialised
+            continue
 
         shares = {}
         for ticker, weight in weights.items():
@@ -326,8 +335,8 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
                 continue
 
             ticker = str(ticker).strip()
+            allocation_gbp = start_gbp_ab * float(weight)
             ccy = infer_currency_from_ticker(ticker)
-            allocation_gbp = port_start * weight
 
             if ticker.upper() == "CASH":
                 shares["CASH"] = shares.get("CASH", 0.0) + allocation_gbp
@@ -341,18 +350,52 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
         state.setdefault(skey, {})["shares"] = shares
 
+    # C
+    cdef = load_json(PORTFOLIO_C_PATH, {})
+    if isinstance(cdef, dict):
+        c_start = float(cdef.get("start_gbp", BASELINE_GBP))
+        weights = extract_weights(cdef)
+        if weights:
+            skey = PORT_STATE_KEY["portfolio_C"]
+            existing = state.get(skey, {}).get("shares")
+            if not (isinstance(existing, dict) and len(existing) > 0):
+                shares = {}
+                for ticker, weight in weights.items():
+                    if float(weight) <= 0:
+                        continue
+                    ticker = str(ticker).strip()
+                    allocation_gbp = c_start * float(weight)
+                    ccy = infer_currency_from_ticker(ticker)
+
+                    if ticker.upper() == "CASH":
+                        shares["CASH"] = shares.get("CASH", 0.0) + allocation_gbp
+                        continue
+
+                    price = price_for_holding(ticker, state)
+                    gbp_to_ccy = gbp_to_ccy_rate(ccy, state) if ccy != "GBP" else 1.0
+                    allocation_ccy = allocation_gbp * gbp_to_ccy
+                    qty = allocation_ccy / price if price else 0.0
+                    shares[ticker] = qty
+
+                state.setdefault(skey, {})["shares"] = shares
+
 
 # -------------------------
 # Inception allocations (ONE TIME)
 # -------------------------
 def ensure_inception_allocations(portfolios_root: dict, state: dict):
+    """
+    Persist per-ticker inception allocations in GBP for A/B/C (once).
+    This enables per-ticker totals since start without needing inception prices/FX.
+    """
     store = state.setdefault(INCEPTION_ALLOC_KEY, {})
     if not isinstance(store, dict):
         state[INCEPTION_ALLOC_KEY] = {}
         store = state[INCEPTION_ALLOC_KEY]
 
-    # A/B from portfolios.json
-    start_gbp = float(portfolios_root.get("start_gbp", BASELINE_GBP))
+    start_gbp_ab = float(portfolios_root.get("start_gbp", BASELINE_GBP))
+
+    # A/B
     for pkey in ("portfolio_A", "portfolio_B"):
         existing = store.get(pkey)
         if isinstance(existing, dict) and existing:
@@ -368,18 +411,25 @@ def ensure_inception_allocations(portfolios_root: dict, state: dict):
 
         allocs = {}
         for ticker, weight in weights.items():
-            if weight <= 0:
+            if float(weight) <= 0:
                 continue
-            allocs[str(ticker).strip()] = round(start_gbp * float(weight), 8)
+            allocs[str(ticker).strip()] = round(start_gbp_ab * float(weight), 8)
+
         store[pkey] = allocs
 
-    # C from portfolio_c.json
-    existing_c = store.get("portfolio_C")
-    if not (isinstance(existing_c, dict) and existing_c):
-        pdef = load_json(PORTFOLIO_C_PATH, {})
-        c_start = float(pdef.get("start_gbp", BASELINE_GBP))
-        weights = extract_weights(pdef)
-        store["portfolio_C"] = {str(t).strip(): round(c_start * float(w), 8) for t, w in weights.items() if float(w) > 0}
+    # C
+    existing = store.get("portfolio_C")
+    if not (isinstance(existing, dict) and existing):
+        cdef = load_json(PORTFOLIO_C_PATH, {})
+        if isinstance(cdef, dict):
+            c_start = float(cdef.get("start_gbp", BASELINE_GBP))
+            weights = extract_weights(cdef)
+            if weights:
+                store["portfolio_C"] = {
+                    str(t).strip(): round(c_start * float(w), 8)
+                    for t, w in weights.items()
+                    if float(w) > 0
+                }
 
 
 def get_inception_alloc_for(portfolio_key: str, ticker: str, state: dict) -> float:
@@ -457,8 +507,8 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         inception_total_gbp += inception_alloc_gbp
 
         if tkey == "CASH":
-            fx = 1.0
             price = 1.0
+            fx = 1.0
             value_gbp = qty
         else:
             price = price_for_holding(ticker, state)
@@ -525,14 +575,20 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 # Benchmark: S&P500 (SPY.US fixed shares)
 # -------------------------
 def ensure_sp500_position(state: dict) -> dict:
+    """
+    Initialise benchmark shares once (state["benchmarks"]["sp500"]["qty"]).
+    """
     b = load_json(BENCHMARKS_PATH, {})
     sp = b.get("sp500") if isinstance(b, dict) else None
     if not isinstance(sp, dict):
-        return {}
+        # default still works if file missing, but keep it explicit
+        sp = {"name": "S&P 500", "ticker": "SPY.US"}
 
     ticker = sp.get("ticker", "SPY.US")
+
     bench = state.setdefault("benchmarks", {})
     s = bench.setdefault("sp500", {})
+
     if s.get("ticker") != ticker:
         s.clear()
         s["ticker"] = ticker
@@ -540,7 +596,7 @@ def ensure_sp500_position(state: dict) -> dict:
     if s.get("qty") is not None:
         return s
 
-    # initialise once using current price/fx
+    # initialise using current price/fx so inception is £1m
     ccy = infer_currency_from_ticker(ticker)  # USD
     price0 = price_for_holding(ticker, state)
     gbp_to_usd0 = gbp_to_ccy_rate(ccy, state)
@@ -550,16 +606,20 @@ def ensure_sp500_position(state: dict) -> dict:
     s["ticker"] = ticker
     s["qty"] = float(qty)
     s["inception_value_gbp"] = float(BASELINE_GBP)
+    s["name"] = sp.get("name", "S&P 500")
     return s
 
 
 def sp500_snapshot(state: dict, prev_latest: dict) -> dict:
     s = ensure_sp500_position(state)
-    if not s or s.get("qty") is None:
-        return {"name": "S&P 500", "ticker": "SPY.US", "total_value_gbp": None}
-
     ticker = s.get("ticker", "SPY.US")
-    qty = float(s["qty"])
+    name = s.get("name", "S&P 500")
+
+    qty = s.get("qty")
+    if qty is None:
+        return {"name": name, "ticker": ticker, "total_value_gbp": None}
+
+    qty = float(qty)
     ccy = infer_currency_from_ticker(ticker)
     price = price_for_holding(ticker, state)
     fx = fx_to_gbp_rate(ccy, state)
@@ -569,20 +629,21 @@ def sp500_snapshot(state: dict, prev_latest: dict) -> dict:
     total_change_gbp = clamp_neg_zero(round(value_gbp - inception, 2))
     total_change_pct = clamp_neg_zero(round((total_change_gbp / inception * 100.0) if inception else 0.0, 4))
 
-    # daily change vs prev latest benchmark value
+    # daily vs prev snapshot
     prev_val = None
-    if isinstance(prev_latest, dict):
-        prev_b = prev_latest.get("benchmarks", {}).get("sp500", {})
-        if isinstance(prev_b, dict) and prev_b.get("total_value_gbp") is not None:
-            try:
-                prev_val = float(prev_b["total_value_gbp"])
-            except Exception:
-                prev_val = None
+    try:
+        prev_val = prev_latest.get("benchmarks", {}).get("sp500", {}).get("total_value_gbp")
+        prev_val = float(prev_val) if prev_val is not None else None
+    except Exception:
+        prev_val = None
+
     change_vs_prev = clamp_neg_zero(round((value_gbp - prev_val) if prev_val is not None else 0.0, 2))
-    change_pct_vs_prev = clamp_neg_zero(round((change_vs_prev / prev_val * 100.0) if (prev_val not in (None, 0)) else 0.0, 4))
+    change_pct_vs_prev = clamp_neg_zero(
+        round((change_vs_prev / prev_val * 100.0) if (prev_val not in (None, 0)) else 0.0, 4)
+    )
 
     return {
-        "name": "S&P 500",
+        "name": name,
         "ticker": ticker,
         "qty": round(qty, 8),
         "currency": ccy,
@@ -602,16 +663,20 @@ def sp500_snapshot(state: dict, prev_latest: dict) -> dict:
 # History (daily totals)
 # -------------------------
 def upsert_daily_history(latest: dict):
+    """
+    Writes what it has (no gating), so chart can still draw series when available.
+    Ensures baseline row exists.
+    """
     today = uk_today_iso()
     history = load_json(HISTORY_PATH, [])
     if not isinstance(history, list):
         history = []
 
-    # Ensure baseline row exists with all keys
-    if not any(isinstance(r, dict) and r.get("date") == BASELINE_DATE for r in history):
+    # baseline row
+    if not any(isinstance(r, dict) and r.get("date") == BASELINE_UK_DATE for r in history):
         history.append(
             {
-                "date": BASELINE_DATE,
+                "date": BASELINE_UK_DATE,
                 "portfolio_A": BASELINE_GBP,
                 "portfolio_B": BASELINE_GBP,
                 "portfolio_C": BASELINE_GBP,
@@ -620,28 +685,25 @@ def upsert_daily_history(latest: dict):
         )
 
     row = {"date": today}
+
     for key in ("portfolio_A", "portfolio_B", "portfolio_C"):
         pdata = latest.get(key)
-        if isinstance(pdata, dict) and "total_value_gbp" in pdata:
+        if isinstance(pdata, dict) and pdata.get("total_value_gbp") is not None:
             row[key] = round(float(pdata["total_value_gbp"]), 2)
 
     sp = latest.get("benchmarks", {}).get("sp500", {})
     if isinstance(sp, dict) and sp.get("total_value_gbp") is not None:
         row["benchmark_sp500"] = round(float(sp["total_value_gbp"]), 2)
 
-    # Only upsert if we have all four series for consistent chart
-    if any(k not in row for k in ("portfolio_A", "portfolio_B", "portfolio_C", "benchmark_sp500")):
-        save_json(HISTORY_PATH, sorted(history, key=lambda r: r.get("date", "")))
-        return
-
+    # upsert
     for r in history:
         if isinstance(r, dict) and r.get("date") == today:
             r.update(row)
-            save_json(HISTORY_PATH, sorted(history, key=lambda r: r.get("date", "")))
+            save_json(HISTORY_PATH, sorted(history, key=lambda x: x.get("date", "")))
             return
 
     history.append(row)
-    save_json(HISTORY_PATH, sorted(history, key=lambda r: r.get("date", "")))
+    save_json(HISTORY_PATH, sorted(history, key=lambda x: x.get("date", "")))
 
 
 # -------------------------
@@ -660,26 +722,30 @@ def main():
     if not isinstance(prev_latest, dict):
         prev_latest = {}
 
+    # Initialise shares + inception allocations (only if missing)
     init_state_shares_from_weights(portfolios_root, state)
     ensure_inception_allocations(portfolios_root, state)
 
+    # Build latest
     latest = {
         "as_of_utc": utc_now_iso(),
         "as_of_uk_date": uk_today_iso(),
     }
 
-    # A/B
+    # Portfolio A/B names from portfolios.json
     for pkey in ("portfolio_A", "portfolio_B"):
         pdef = portfolios_root.get(pkey, {})
         pname = pdef.get("name") if isinstance(pdef, dict) else None
-        latest[pkey] = value_from_state_shares(pkey, pname or pkey, state, prev_latest)
+        if not pname:
+            pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
+        latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
-    # C
+    # Portfolio C name from portfolio_c.json
     cdef = load_json(PORTFOLIO_C_PATH, {})
-    cname = cdef.get("name") if isinstance(cdef, dict) else "Portfolio C"
+    cname = cdef.get("name") if isinstance(cdef, dict) and cdef.get("name") else "Portfolio C"
     latest["portfolio_C"] = value_from_state_shares("portfolio_C", cname, state, prev_latest)
 
-    # change_gbp_vs_prev at portfolio level
+    # Portfolio-level daily change vs prev total
     for pkey in ("portfolio_A", "portfolio_B", "portfolio_C"):
         pdata = latest.get(pkey)
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
@@ -697,11 +763,12 @@ def main():
     # Benchmark snapshot
     latest["benchmarks"] = {"sp500": sp500_snapshot(state, prev_latest)}
 
+    # Persist
     state["last_run_utc"] = latest["as_of_utc"]
-
     save_json(LATEST_PATH, latest)
     save_json(STATE_PATH, state)
 
+    # History
     upsert_daily_history(latest)
 
 
