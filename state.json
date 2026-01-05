@@ -31,7 +31,7 @@
       "MSTR.US": 266.0160205647834
     }
   },
-  "last_run_utc": "2026-01-05T21:29:06Z",
+  "last_run_utc": "2026-01-05T21:44:21Z",
   "price_cache": {
     "NVDA.US": {
       "price": 188.12,
@@ -174,17 +174,59 @@
       "source": "stooq"
     },
     "SPY.US": {
-      "price": 687.975,
+      "price": 687.7,
       "quote_date": "2026-01-05",
-      "quote_time": "21:09:10",
-      "updated_at": "2026-01-05T20:24:11Z",
+      "quote_time": "22:00:19",
+      "updated_at": "2026-01-05T21:44:17Z",
+      "source": "stooq"
+    },
+    "EWJV.US": {
+      "price": 40.685,
+      "quote_date": "2026-01-05",
+      "quote_time": "22:00:19",
+      "updated_at": "2026-01-05T21:44:14Z",
+      "source": "stooq"
+    },
+    "ISF.UK": {
+      "price": 973.3,
+      "quote_date": "2026-01-05",
+      "quote_time": "17:35:20",
+      "updated_at": "2026-01-05T21:44:14Z",
+      "source": "stooq"
+    },
+    "SMEA.UK": {
+      "price": 8278.0,
+      "quote_date": "2026-01-05",
+      "quote_time": "17:35:06",
+      "updated_at": "2026-01-05T21:44:15Z",
+      "source": "stooq"
+    },
+    "AGG.US": {
+      "price": 100.035,
+      "quote_date": "2026-01-05",
+      "quote_time": "22:00:18",
+      "updated_at": "2026-01-05T21:44:16Z",
+      "source": "stooq"
+    },
+    "FXI.US": {
+      "price": 39.93,
+      "quote_date": "2026-01-05",
+      "quote_time": "22:00:18",
+      "updated_at": "2026-01-05T21:44:18Z",
+      "source": "stooq"
+    },
+    "VGT.US": {
+      "price": 757.42,
+      "quote_date": "2026-01-05",
+      "quote_time": "22:00:19",
+      "updated_at": "2026-01-05T21:44:20Z",
       "source": "stooq"
     }
   },
   "fx_cache": {
     "GBPUSD": {
-      "rate": 1.3545,
-      "updated_at": "2026-01-05T20:24:13Z"
+      "rate": 1.3541,
+      "updated_at": "2026-01-05T21:44:13Z"
     },
     "USDGBP": {
       "rate": 0.7383724793809485,
@@ -218,6 +260,16 @@
       "COIN.US": 70000.0,
       "MARA.US": 50000.0,
       "MSTR.US": 30000.0
+    },
+    "portfolio_C": {
+      "QQQ.US": 111631.38,
+      "EWJV.US": 249163.01,
+      "ISF.UK": 220802.22,
+      "SMEA.UK": 70510.59,
+      "AGG.US": 4421.89,
+      "SPY.US": 115391.47,
+      "FXI.US": 101894.33,
+      "VGT.US": 126185.11
     }
   },
   "benchmarks": {
@@ -227,7 +279,22 @@
       },
       "ticker": "SPY.US",
       "name": "S&P 500",
-      "inception_value_gbp": 1000000.0
+      "inception_value_gbp": 1000000.0,
+      "qty": 1969.0271920895739,
+      "inception_gbp": 1000000.0,
+      "inception_note": "Notional \u00a31m into SPY at inception"
+    }
+  },
+  "C": {
+    "shares": {
+      "QQQ.US": 244.59951076554637,
+      "EWJV.US": 8292.77699007005,
+      "ISF.UK": 226.8593650467482,
+      "SMEA.UK": 8.51782918579367,
+      "AGG.US": 59.85586293797172,
+      "SPY.US": 227.2089421651883,
+      "FXI.US": 3455.424799724518,
+      "VGT.US": 225.59116137809932
     }
   }
 }
