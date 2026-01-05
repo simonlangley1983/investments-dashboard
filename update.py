@@ -9,6 +9,8 @@ Key requirement:
 Quantities source of truth:
 - Portfolio A shares at state["A"]["shares"]
 - Portfolio B shares at state["B"]["shares"]
+- Portfolio C shares at state["C"]["shares"]
+- Benchmarks shares at state["benchmarks"][<key>]["shares"]
 
 Weights in portfolios.json are ONLY used to initialise shares ONCE
 (if state shares don't already exist).
@@ -22,14 +24,14 @@ Adds:
   - price_direction: "up" | "down" | "flat"
 
 Fixes:
-- Per-holding "Total % change" since start is now *per ticker* (not identical).
+- Per-holding "Total % change" since start is *per ticker* (not identical).
   We persist each ticker's inception GBP allocation ONCE in state.json, based on portfolios.json weights + start_gbp.
   This gives a clean baseline without needing to store inception prices/FX.
 
 Outputs:
 - latest.json  : snapshot (portfolio totals + holdings breakdown + per-holding changes vs previous snapshot
-                + per-holding total changes since start)
-- state.json   : caches + A/B shares + last_run timestamp + inception allocations
+                + per-holding total changes since start + benchmarks)
+- state.json   : caches + A/B/C shares + last_run timestamp + inception allocations + benchmark shares/inception
 - history.json : one row per UK date, updated each run for "today"
 """
 
@@ -54,13 +56,20 @@ PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 
+# Portfolios in state:
 PORT_STATE_KEY = {
     "portfolio_A": "A",
     "portfolio_B": "B",
+    "portfolio_C": "C",
 }
 
 CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
 INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
+
+# Benchmarks config/output
+BENCH_STATE_KEY = "benchmarks"
+DEFAULT_SP500_TICKER = "SPY.US"   # single-ticker proxy for S&P 500 (ETF)
+DEFAULT_SP500_NAME = "S&P 500"
 
 
 # -------------------------
@@ -366,7 +375,7 @@ def ensure_inception_allocations(portfolios_root: dict, state: dict):
         state[INCEPTION_ALLOC_KEY] = {}
         store = state[INCEPTION_ALLOC_KEY]
 
-    for pkey in ("portfolio_A", "portfolio_B"):
+    for pkey in ("portfolio_A", "portfolio_B", "portfolio_C"):
         existing = store.get(pkey)
         if isinstance(existing, dict) and existing:
             continue  # don't overwrite
@@ -568,6 +577,202 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
 
 
 # -------------------------
+# Benchmarks (ONE TIME init + valuation)
+# -------------------------
+def init_benchmark_shares(portfolios_root: dict, state: dict):
+    """
+    Initialises benchmark shares ONCE, using start_gbp baseline.
+    Config is optional in portfolios.json under:
+      "benchmarks": { "sp500": { "ticker": "SPY.US", "name": "S&P 500" } }
+    """
+    start_gbp = portfolios_root.get("start_gbp")
+    if start_gbp is None:
+        return
+    start_gbp = float(start_gbp)
+
+    bench_cfg_root = portfolios_root.get("benchmarks", {})
+    if not isinstance(bench_cfg_root, dict):
+        bench_cfg_root = {}
+
+    sp_cfg = bench_cfg_root.get("sp500", {})
+    if not isinstance(sp_cfg, dict):
+        sp_cfg = {}
+
+    ticker = str(sp_cfg.get("ticker") or DEFAULT_SP500_TICKER).strip()
+    name = str(sp_cfg.get("name") or DEFAULT_SP500_NAME).strip()
+
+    bench_state = state.setdefault(BENCH_STATE_KEY, {})
+    if not isinstance(bench_state, dict):
+        state[BENCH_STATE_KEY] = {}
+        bench_state = state[BENCH_STATE_KEY]
+
+    sp_state = bench_state.setdefault("sp500", {})
+    if not isinstance(sp_state, dict):
+        bench_state["sp500"] = {}
+        sp_state = bench_state["sp500"]
+
+    # If shares already exist, do nothing (ONE TIME init)
+    if isinstance(sp_state.get("shares"), dict) and sp_state["shares"].get(ticker) is not None:
+        sp_state["ticker"] = ticker
+        sp_state["name"] = name
+        sp_state.setdefault("inception_value_gbp", start_gbp)
+        return
+
+    ccy = infer_currency_from_ticker(ticker)
+
+    if ticker.upper() == "CASH":
+        sp_state["shares"] = {"CASH": start_gbp}
+        sp_state["ticker"] = "CASH"
+        sp_state["name"] = name or "Cash"
+        sp_state["inception_value_gbp"] = start_gbp
+        return
+
+    price = price_for_holding(ticker, state)
+    gbp_to_ccy = gbp_to_ccy_rate(ccy, state)
+    allocation_ccy = start_gbp * gbp_to_ccy
+    qty = allocation_ccy / price if price else 0.0
+
+    sp_state["shares"] = {ticker: qty}
+    sp_state["ticker"] = ticker
+    sp_state["name"] = name
+    sp_state["inception_value_gbp"] = start_gbp
+
+
+def value_benchmark_sp500(state: dict, prev_latest: dict) -> dict:
+    bench_state = state.get(BENCH_STATE_KEY, {})
+    sp_state = bench_state.get("sp500", {}) if isinstance(bench_state, dict) else {}
+    if not isinstance(sp_state, dict):
+        sp_state = {}
+
+    ticker = str(sp_state.get("ticker") or DEFAULT_SP500_TICKER).strip()
+    name = str(sp_state.get("name") or DEFAULT_SP500_NAME).strip()
+    inception_gbp = float(sp_state.get("inception_value_gbp") or 1000000.0)
+
+    shares = sp_state.get("shares", {})
+    if not isinstance(shares, dict):
+        shares = {}
+
+    # Previous benchmark snapshot (for daily delta)
+    prev_bench = prev_latest.get("benchmarks", {}) if isinstance(prev_latest, dict) else {}
+    prev_sp = prev_bench.get("sp500", {}) if isinstance(prev_bench, dict) else {}
+    prev_holdings = prev_sp.get("holdings", []) if isinstance(prev_sp, dict) else []
+    prev_idx = {}
+    if isinstance(prev_holdings, list):
+        for h in prev_holdings:
+            if isinstance(h, dict) and h.get("ticker"):
+                prev_idx[str(h["ticker"]).strip().upper()] = h
+
+    holdings = []
+    total_gbp = 0.0
+
+    for ht, qty in shares.items():
+        try:
+            qty = float(qty)
+        except Exception:
+            continue
+        if qty == 0.0:
+            continue
+
+        ht = str(ht).strip()
+        tkey = ht.upper()
+        ccy = infer_currency_from_ticker(ht)
+
+        if tkey == "CASH":
+            fx = fx_to_gbp_rate(ccy, state)
+            value_gbp = qty * fx
+
+            prev = prev_idx.get("CASH")
+            prev_value = float(prev.get("value_gbp")) if isinstance(prev, dict) and prev.get("value_gbp") is not None else None
+
+            change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
+            change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
+            change_value = clamp_neg_zero(round(change_value, 2))
+            change_pct = clamp_neg_zero(round(change_pct, 4))
+
+            total_change_gbp = value_gbp - inception_gbp
+            total_change_pct = (total_change_gbp / inception_gbp * 100.0) if inception_gbp else 0.0
+            total_change_gbp = clamp_neg_zero(round(total_change_gbp, 2))
+            total_change_pct = clamp_neg_zero(round(total_change_pct, 4))
+
+            holdings.append({
+                "ticker": "CASH",
+                "qty": round(qty, 8),
+                "currency": ccy,
+                "price": 1.0,
+                "fx_to_gbp": round(fx, 8),
+                "value_gbp": round(value_gbp, 2),
+                "type": "cash",
+                "change_price_vs_prev": 0.0,
+                "change_value_gbp_vs_prev": change_value,
+                "change_pct_vs_prev": change_pct,
+                "price_direction": "flat",
+                "inception_value_gbp": round(inception_gbp, 2),
+                "total_change_gbp_since_start": total_change_gbp,
+                "total_change_pct_since_start": total_change_pct,
+                "total_direction": direction_from_delta(total_change_gbp),
+            })
+            total_gbp += value_gbp
+            continue
+
+        price = price_for_holding(ht, state)
+        fx = fx_to_gbp_rate(ccy, state)
+        value_gbp = (qty * price) * fx
+
+        prev = prev_idx.get(tkey)
+        prev_price = float(prev.get("price")) if isinstance(prev, dict) and prev.get("price") is not None else None
+        prev_value = float(prev.get("value_gbp")) if isinstance(prev, dict) and prev.get("value_gbp") is not None else None
+
+        change_price = (price - prev_price) if prev_price is not None else 0.0
+        change_value = (value_gbp - prev_value) if prev_value is not None else 0.0
+        change_pct = (change_value / prev_value * 100.0) if (prev_value is not None and prev_value != 0) else 0.0
+
+        change_price = clamp_neg_zero(round(change_price, 6))
+        change_value = clamp_neg_zero(round(change_value, 2))
+        change_pct = clamp_neg_zero(round(change_pct, 4))
+
+        total_change_gbp = value_gbp - inception_gbp
+        total_change_pct = (total_change_gbp / inception_gbp * 100.0) if inception_gbp else 0.0
+        total_change_gbp = clamp_neg_zero(round(total_change_gbp, 2))
+        total_change_pct = clamp_neg_zero(round(total_change_pct, 4))
+
+        holdings.append({
+            "ticker": ht,
+            "qty": round(qty, 8),
+            "currency": ccy,
+            "price": round(price, 6),
+            "fx_to_gbp": round(fx, 8),
+            "value_gbp": round(value_gbp, 2),
+            "type": "asset",
+            "change_price_vs_prev": change_price,
+            "change_value_gbp_vs_prev": change_value,
+            "change_pct_vs_prev": change_pct,
+            "price_direction": direction_from_delta(change_price),
+            "inception_value_gbp": round(inception_gbp, 2),
+            "total_change_gbp_since_start": total_change_gbp,
+            "total_change_pct_since_start": total_change_pct,
+            "total_direction": direction_from_delta(total_change_gbp),
+        })
+        total_gbp += value_gbp
+
+    total_change_gbp = total_gbp - inception_gbp
+    total_change_pct = (total_change_gbp / inception_gbp * 100.0) if inception_gbp else 0.0
+    total_change_gbp = clamp_neg_zero(round(total_change_gbp, 2))
+    total_change_pct = clamp_neg_zero(round(total_change_pct, 4))
+
+    return {
+        "key": "sp500",
+        "name": name,
+        "ticker": ticker,
+        "holdings": holdings,
+        "total_value_gbp": round(total_gbp, 2),
+        "inception_value_gbp": round(inception_gbp, 2),
+        "total_change_gbp_since_start": total_change_gbp,
+        "total_change_pct_since_start": total_change_pct,
+        "total_direction": direction_from_delta(total_change_gbp),
+    }
+
+
+# -------------------------
 # History (daily totals)
 # -------------------------
 def upsert_daily_history(latest: dict):
@@ -577,9 +782,18 @@ def upsert_daily_history(latest: dict):
         history = []
 
     today_row = {"date": today}
+
+    # Portfolios
     for key, pdata in latest.items():
         if isinstance(pdata, dict) and "total_value_gbp" in pdata:
             today_row[key] = round(float(pdata["total_value_gbp"]), 2)
+
+    # Benchmarks (flatten to simple key for history)
+    benches = latest.get("benchmarks")
+    if isinstance(benches, dict):
+        sp = benches.get("sp500")
+        if isinstance(sp, dict) and "total_value_gbp" in sp:
+            today_row["benchmark_sp500"] = round(float(sp["total_value_gbp"]), 2)
 
     if len(today_row) <= 1:
         return
@@ -614,18 +828,28 @@ def main():
     init_state_shares_from_weights(portfolios_root, state)
     ensure_inception_allocations(portfolios_root, state)
 
+    # Benchmarks (optional but enabled by default)
+    init_benchmark_shares(portfolios_root, state)
+
     latest = {
         "as_of_utc": utc_now_iso(),
         "as_of_uk_date": uk_today_iso(),
     }
 
+    # Portfolios A/B/C
     for pkey, _ in PORT_STATE_KEY.items():
         pdef = portfolios_root.get(pkey, {})
         pname = pdef.get("name") if isinstance(pdef, dict) else None
         if not pname:
-            pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
+            if pkey == "portfolio_A":
+                pname = "Portfolio A"
+            elif pkey == "portfolio_B":
+                pname = "Portfolio B"
+            else:
+                pname = "Portfolio C"
         latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
+    # Portfolio total delta vs previous snapshot
     for pkey, pdata in latest.items():
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
             continue
@@ -638,6 +862,11 @@ def main():
                 pdata["change_gbp_vs_prev"] = 0.0
         else:
             pdata["change_gbp_vs_prev"] = 0.0
+
+    # Benchmarks output
+    latest["benchmarks"] = {
+        "sp500": value_benchmark_sp500(state, prev_latest)
+    }
 
     state["last_run_utc"] = latest["as_of_utc"]
 
