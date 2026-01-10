@@ -1,0 +1,606 @@
+{
+  "as_of": "2025-01-07",
+  "source": "topforeignstocks.com",
+  "items": [
+    {
+      "short": "3I Group",
+      "long": "3I Group PLC",
+      "symbol": "III.UK",
+      "epic": "III"
+    },
+    {
+      "short": "Admiral Group",
+      "long": "Admiral Group PLC",
+      "symbol": "ADM.UK",
+      "epic": "ADM"
+    },
+    {
+      "short": "Airtel Africa",
+      "long": "Airtel Africa PLC",
+      "symbol": "AAF.UK",
+      "epic": "AAF"
+    },
+    {
+      "short": "Alliance Witan",
+      "long": "Alliance Witan PLC",
+      "symbol": "ALW.UK",
+      "epic": "ALW"
+    },
+    {
+      "short": "Anglo American",
+      "long": "Anglo American PLC",
+      "symbol": "AAL.UK",
+      "epic": "AAL"
+    },
+    {
+      "short": "Antofagasta",
+      "long": "Antofagasta PLC",
+      "symbol": "ANTO.UK",
+      "epic": "ANTO"
+    },
+    {
+      "short": "Ashtead Group",
+      "long": "Ashtead Group PLC",
+      "symbol": "AHT.UK",
+      "epic": "AHT"
+    },
+    {
+      "short": "Associated British Foods",
+      "long": "Associated British Foods PLC",
+      "symbol": "ABF.UK",
+      "epic": "ABF"
+    },
+    {
+      "short": "Astrazeneca",
+      "long": "Astrazeneca PLC",
+      "symbol": "AZN.UK",
+      "epic": "AZN"
+    },
+    {
+      "short": "Auto Trader Group",
+      "long": "Auto Trader Group PLC",
+      "symbol": "AUTO.UK",
+      "epic": "AUTO"
+    },
+    {
+      "short": "Aviva",
+      "long": "Aviva PLC",
+      "symbol": "AV.UK",
+      "epic": "AV."
+    },
+    {
+      "short": "BAE Systems",
+      "long": "BAE Systems PLC",
+      "symbol": "BA.UK",
+      "epic": "BA."
+    },
+    {
+      "short": "Barclays",
+      "long": "Barclays PLC",
+      "symbol": "BARC.UK",
+      "epic": "BARC"
+    },
+    {
+      "short": "Barratt Redrow",
+      "long": "Barratt Redrow PLC",
+      "symbol": "BTRW.UK",
+      "epic": "BTRW"
+    },
+    {
+      "short": "Beazley",
+      "long": "Beazley PLC",
+      "symbol": "BEZ.UK",
+      "epic": "BEZ"
+    },
+    {
+      "short": "Berkeley Group Holdings",
+      "long": "Berkeley Group Holdings (The) PLC",
+      "symbol": "BKG.UK",
+      "epic": "BKG"
+    },
+    {
+      "short": "BP",
+      "long": "BP PLC",
+      "symbol": "BP.UK",
+      "epic": "BP."
+    },
+    {
+      "short": "British American Tobacco",
+      "long": "British American Tobacco PLC",
+      "symbol": "BATS.UK",
+      "epic": "BATS"
+    },
+    {
+      "short": "British Land Co",
+      "long": "British Land Co PLC",
+      "symbol": "BLND.UK",
+      "epic": "BLND"
+    },
+    {
+      "short": "BT Group",
+      "long": "BT Group PLC",
+      "symbol": "BT_A.UK",
+      "epic": "BT.A"
+    },
+    {
+      "short": "Bunzl",
+      "long": "Bunzl PLC",
+      "symbol": "BNZL.UK",
+      "epic": "BNZL"
+    },
+    {
+      "short": "Centrica",
+      "long": "Centrica PLC",
+      "symbol": "CNA.UK",
+      "epic": "CNA"
+    },
+    {
+      "short": "Coca-Cola HBC",
+      "long": "Coca-Cola HBC AG",
+      "symbol": "CCH.UK",
+      "epic": "CCH"
+    },
+    {
+      "short": "Compass Group",
+      "long": "Compass Group PLC",
+      "symbol": "CPG.UK",
+      "epic": "CPG"
+    },
+    {
+      "short": "Convatec Group",
+      "long": "Convatec Group PLC",
+      "symbol": "CTEC.UK",
+      "epic": "CTEC"
+    },
+    {
+      "short": "Croda International",
+      "long": "Croda International PLC",
+      "symbol": "CRDA.UK",
+      "epic": "CRDA"
+    },
+    {
+      "short": "DCC",
+      "long": "DCC PLC",
+      "symbol": "DCC.UK",
+      "epic": "DCC"
+    },
+    {
+      "short": "Diageo",
+      "long": "Diageo PLC",
+      "symbol": "DGE.UK",
+      "epic": "DGE"
+    },
+    {
+      "short": "Diploma",
+      "long": "Diploma PLC",
+      "symbol": "DPLM.UK",
+      "epic": "DPLM"
+    },
+    {
+      "short": "Easyjet",
+      "long": "Easyjet PLC",
+      "symbol": "EZJ.UK",
+      "epic": "EZJ"
+    },
+    {
+      "short": "Endeavour Mining",
+      "long": "Endeavour Mining PLC",
+      "symbol": "EDV.UK",
+      "epic": "EDV"
+    },
+    {
+      "short": "Entain",
+      "long": "Entain PLC",
+      "symbol": "ENT.UK",
+      "epic": "ENT"
+    },
+    {
+      "short": "Experian",
+      "long": "Experian PLC",
+      "symbol": "EXPN.UK",
+      "epic": "EXPN"
+    },
+    {
+      "short": "F&C Investment Trust",
+      "long": "F&C Investment Trust PLC",
+      "symbol": "FCIT.UK",
+      "epic": "FCIT"
+    },
+    {
+      "short": "Fresnillo",
+      "long": "Fresnillo PLC",
+      "symbol": "FRES.UK",
+      "epic": "FRES"
+    },
+    {
+      "short": "Games Workshop Group",
+      "long": "Games Workshop Group PLC",
+      "symbol": "GAW.UK",
+      "epic": "GAW"
+    },
+    {
+      "short": "Glencore",
+      "long": "Glencore PLC",
+      "symbol": "GLEN.UK",
+      "epic": "GLEN"
+    },
+    {
+      "short": "GSK",
+      "long": "GSK PLC",
+      "symbol": "GSK.UK",
+      "epic": "GSK"
+    },
+    {
+      "short": "Haleon",
+      "long": "Haleon PLC",
+      "symbol": "HLN.UK",
+      "epic": "HLN"
+    },
+    {
+      "short": "Halma",
+      "long": "Halma PLC",
+      "symbol": "HLMA.UK",
+      "epic": "HLMA"
+    },
+    {
+      "short": "Hargreaves Lansdown",
+      "long": "Hargreaves Lansdown PLC",
+      "symbol": "HL.UK",
+      "epic": "HL."
+    },
+    {
+      "short": "Hikma Pharmaceuticals",
+      "long": "Hikma Pharmaceuticals PLC",
+      "symbol": "HIK.UK",
+      "epic": "HIK"
+    },
+    {
+      "short": "Hiscox Ld",
+      "long": "Hiscox Ld",
+      "symbol": "HSX.UK",
+      "epic": "HSX"
+    },
+    {
+      "short": "Howden Joinery Group",
+      "long": "Howden Joinery Group PLC",
+      "symbol": "HWDN.UK",
+      "epic": "HWDN"
+    },
+    {
+      "short": "HSBC Hldgs",
+      "long": "HSBC Hldgs PLC",
+      "symbol": "HSBA.UK",
+      "epic": "HSBA"
+    },
+    {
+      "short": "IMI",
+      "long": "IMI PLC",
+      "symbol": "IMI.UK",
+      "epic": "IMI"
+    },
+    {
+      "short": "Imperial Brands",
+      "long": "Imperial Brands PLC",
+      "symbol": "IMB.UK",
+      "epic": "IMB"
+    },
+    {
+      "short": "Informa",
+      "long": "Informa PLC",
+      "symbol": "INF.UK",
+      "epic": "INF"
+    },
+    {
+      "short": "Intercontinental Hotels Group",
+      "long": "Intercontinental Hotels Group PLC",
+      "symbol": "IHG.UK",
+      "epic": "IHG"
+    },
+    {
+      "short": "Intermediate Capital Group",
+      "long": "Intermediate Capital Group PLC",
+      "symbol": "ICG.UK",
+      "epic": "ICG"
+    },
+    {
+      "short": "Intertek Group",
+      "long": "Intertek Group PLC",
+      "symbol": "ITRK.UK",
+      "epic": "ITRK"
+    },
+    {
+      "short": "Intl Consolidated Airlines Group Sa",
+      "long": "Intl Consolidated Airlines Group Sa",
+      "symbol": "IAG.UK",
+      "epic": "IAG"
+    },
+    {
+      "short": "JD Sports Fashion",
+      "long": "JD Sports Fashion PLC",
+      "symbol": "JD.UK",
+      "epic": "JD."
+    },
+    {
+      "short": "Kingfisher",
+      "long": "Kingfisher PLC",
+      "symbol": "KGF.UK",
+      "epic": "KGF"
+    },
+    {
+      "short": "Land Securities Group",
+      "long": "Land Securities Group PLC",
+      "symbol": "LAND.UK",
+      "epic": "LAND"
+    },
+    {
+      "short": "Legal & General Group",
+      "long": "Legal & General Group PLC",
+      "symbol": "LGEN.UK",
+      "epic": "LGEN"
+    },
+    {
+      "short": "Lloyds Banking Group",
+      "long": "Lloyds Banking Group PLC",
+      "symbol": "LLOY.UK",
+      "epic": "LLOY"
+    },
+    {
+      "short": "London Stock Exchange Group",
+      "long": "London Stock Exchange Group PLC",
+      "symbol": "LSEG.UK",
+      "epic": "LSEG"
+    },
+    {
+      "short": "Londonmetric Property",
+      "long": "Londonmetric Property PLC",
+      "symbol": "LMP.UK",
+      "epic": "LMP"
+    },
+    {
+      "short": "M&G",
+      "long": "M&G PLC",
+      "symbol": "MNG.UK",
+      "epic": "MNG"
+    },
+    {
+      "short": "Marks & Spencer Group",
+      "long": "Marks & Spencer Group PLC",
+      "symbol": "MKS.UK",
+      "epic": "MKS"
+    },
+    {
+      "short": "Melrose Industries",
+      "long": "Melrose Industries PLC",
+      "symbol": "MRO.UK",
+      "epic": "MRO"
+    },
+    {
+      "short": "Mondi",
+      "long": "Mondi PLC",
+      "symbol": "MNDI.UK",
+      "epic": "MNDI"
+    },
+    {
+      "short": "National Grid",
+      "long": "National Grid PLC",
+      "symbol": "NG.UK",
+      "epic": "NG."
+    },
+    {
+      "short": "Natwest Group",
+      "long": "Natwest Group PLC",
+      "symbol": "NWG.UK",
+      "epic": "NWG"
+    },
+    {
+      "short": "Next",
+      "long": "Next PLC",
+      "symbol": "NXT.UK",
+      "epic": "NXT"
+    },
+    {
+      "short": "Pearson",
+      "long": "Pearson PLC",
+      "symbol": "PSON.UK",
+      "epic": "PSON"
+    },
+    {
+      "short": "Pershing Square Holdings",
+      "long": "Pershing Square Holdings Ltd",
+      "symbol": "PSH.UK",
+      "epic": "PSH"
+    },
+    {
+      "short": "Persimmon",
+      "long": "Persimmon PLC",
+      "symbol": "PSN.UK",
+      "epic": "PSN"
+    },
+    {
+      "short": "Phoenix Group Holdings",
+      "long": "Phoenix Group Holdings PLC",
+      "symbol": "PHNX.UK",
+      "epic": "PHNX"
+    },
+    {
+      "short": "Prudential",
+      "long": "Prudential PLC",
+      "symbol": "PRU.UK",
+      "epic": "PRU"
+    },
+    {
+      "short": "Reckitt Benckiser Group",
+      "long": "Reckitt Benckiser Group PLC",
+      "symbol": "RKT.UK",
+      "epic": "RKT"
+    },
+    {
+      "short": "RELX",
+      "long": "RELX PLC",
+      "symbol": "REL.UK",
+      "epic": "REL"
+    },
+    {
+      "short": "Rentokil Initial",
+      "long": "Rentokil Initial PLC",
+      "symbol": "RTO.UK",
+      "epic": "RTO"
+    },
+    {
+      "short": "Rightmove",
+      "long": "Rightmove PLC",
+      "symbol": "RMV.UK",
+      "epic": "RMV"
+    },
+    {
+      "short": "Rio Tinto",
+      "long": "Rio Tinto PLC",
+      "symbol": "RIO.UK",
+      "epic": "RIO"
+    },
+    {
+      "short": "Rolls-Royce Holdings",
+      "long": "Rolls-Royce Holdings PLC",
+      "symbol": "RR.UK",
+      "epic": "RR."
+    },
+    {
+      "short": "Sage Group",
+      "long": "Sage Group PLC",
+      "symbol": "SGE.UK",
+      "epic": "SGE"
+    },
+    {
+      "short": "Sainsbury(J)",
+      "long": "Sainsbury(J) PLC",
+      "symbol": "SBRY.UK",
+      "epic": "SBRY"
+    },
+    {
+      "short": "Schroders",
+      "long": "Schroders PLC",
+      "symbol": "SDR.UK",
+      "epic": "SDR"
+    },
+    {
+      "short": "Scottish Mortgage Inv Tst",
+      "long": "Scottish Mortgage Inv Tst PLC",
+      "symbol": "SMT.UK",
+      "epic": "SMT"
+    },
+    {
+      "short": "Segro",
+      "long": "Segro PLC",
+      "symbol": "SGRO.UK",
+      "epic": "SGRO"
+    },
+    {
+      "short": "Severn Trent",
+      "long": "Severn Trent PLC",
+      "symbol": "SVT.UK",
+      "epic": "SVT"
+    },
+    {
+      "short": "Shell",
+      "long": "Shell PLC",
+      "symbol": "SHEL.UK",
+      "epic": "SHEL"
+    },
+    {
+      "short": "Smith & Nephew",
+      "long": "Smith & Nephew PLC",
+      "symbol": "SN.UK",
+      "epic": "SN."
+    },
+    {
+      "short": "Smith (Ds)",
+      "long": "Smith (Ds) PLC",
+      "symbol": "SMDS.UK",
+      "epic": "SMDS"
+    },
+    {
+      "short": "Smiths Group",
+      "long": "Smiths Group PLC",
+      "symbol": "SMIN.UK",
+      "epic": "SMIN"
+    },
+    {
+      "short": "Spirax Group",
+      "long": "Spirax Group PLC",
+      "symbol": "SPX.UK",
+      "epic": "SPX"
+    },
+    {
+      "short": "SSE",
+      "long": "SSE PLC",
+      "symbol": "SSE.UK",
+      "epic": "SSE"
+    },
+    {
+      "short": "St.James'S Place",
+      "long": "St.James'S Place PLC",
+      "symbol": "STJ.UK",
+      "epic": "STJ"
+    },
+    {
+      "short": "Standard Chartered",
+      "long": "Standard Chartered PLC",
+      "symbol": "STAN.UK",
+      "epic": "STAN"
+    },
+    {
+      "short": "Taylor Wimpey",
+      "long": "Taylor Wimpey PLC",
+      "symbol": "TW.UK",
+      "epic": "TW."
+    },
+    {
+      "short": "Tesco",
+      "long": "Tesco PLC",
+      "symbol": "TSCO.UK",
+      "epic": "TSCO"
+    },
+    {
+      "short": "Unilever",
+      "long": "Unilever PLC",
+      "symbol": "ULVR.UK",
+      "epic": "ULVR"
+    },
+    {
+      "short": "Unite Group",
+      "long": "Unite Group PLC",
+      "symbol": "UTG.UK",
+      "epic": "UTG"
+    },
+    {
+      "short": "United Utilities Group",
+      "long": "United Utilities Group PLC",
+      "symbol": "UU.UK",
+      "epic": "UU."
+    },
+    {
+      "short": "Vodafone Group",
+      "long": "Vodafone Group PLC",
+      "symbol": "VOD.UK",
+      "epic": "VOD"
+    },
+    {
+      "short": "Weir Group",
+      "long": "Weir Group PLC",
+      "symbol": "WEIR.UK",
+      "epic": "WEIR"
+    },
+    {
+      "short": "Whitbread",
+      "long": "Whitbread PLC",
+      "symbol": "WTB.UK",
+      "epic": "WTB"
+    },
+    {
+      "short": "WPP",
+      "long": "WPP PLC",
+      "symbol": "WPP.UK",
+      "epic": "WPP"
+    }
+  ]
+}
