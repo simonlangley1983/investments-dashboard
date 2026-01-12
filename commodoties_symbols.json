@@ -1,0 +1,12 @@
+[
+  { "symbol": "XAUUSD", "name": "Gold (spot, USD/oz)" },
+  { "symbol": "XAGUSD", "name": "Silver (spot, USD/oz)" },
+
+  { "symbol": "CL.F",   "name": "WTI Crude Oil (futures)" },
+  { "symbol": "CB.F",   "name": "Brent Crude Oil (futures)" },
+  { "symbol": "NG.F",   "name": "Natural Gas (futures)" },
+
+  { "symbol": "HG.F",   "name": "Copper (futures)" },
+  { "symbol": "PL.F",   "name": "Platinum (futures)" },
+  { "symbol": "PA.F",   "name": "Palladium (futures)" }
+]
