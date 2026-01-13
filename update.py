@@ -8,6 +8,13 @@ Key requirements:
 - Provide per-holding daily change vs previous snapshot.
 - Provide per-holding totals since start (per ticker).
 
+Change (Jan 2026):
+- "Since last run" requires prices that move intraday. Stooq quote endpoint returns CLOSE and often
+  stays flat intraday, causing 0.000% everywhere. We now:
+    - Prefer Stooq 5-minute bars (latest bar close) for intraday movement
+    - Fall back to quote close if intraday is unavailable
+    - Use shorter TTLs suitable for intraday prices/FX
+
 Portfolios:
 - A/B definitions + weights live in portfolios.json (used ONLY to initialise shares once)
 - C definition + weights live in portfolio_c.json (used ONLY to initialise shares once)
@@ -44,9 +51,14 @@ PORTFOLIOS_PATH = os.path.join(ROOT, "portfolios.json")
 PORTFOLIO_C_PATH = os.path.join(ROOT, "portfolio_c.json")
 BENCHMARKS_PATH = os.path.join(ROOT, "benchmarks.json")
 
+# Stooq endpoints
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
+STOOQ_BARS = "https://stooq.com/q/d/l/?s={symbol}&i={interval}"  # interval: 5 (5-min), h (hourly), d (daily)
 
-CACHE_TTL_SECONDS = 55 * 60  # 55 minutes
+# TTLs (intraday friendly)
+PRICE_CACHE_TTL_SECONDS = 4 * 60     # 4 minutes
+FX_CACHE_TTL_SECONDS = 10 * 60       # 10 minutes
+
 INCEPTION_ALLOC_KEY = "inception_allocations_gbp"
 
 BASELINE_GBP = 1_000_000.0
@@ -122,7 +134,7 @@ def save_json(path: str, data):
 # -------------------------
 # HTTP / Stooq
 # -------------------------
-def http_get(url: str, timeout: int = 20) -> str:
+def http_get(url: str, timeout: int = 25) -> str:
     req = Request(url, headers={"User-Agent": "invest-game-bot"})
     with urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", errors="replace")
@@ -160,6 +172,51 @@ def stooq_quote(symbol: str) -> dict:
     }
 
 
+def stooq_latest_close_from_bars(symbol: str, interval: str) -> dict:
+    """
+    Fetch latest bar close from Stooq bars endpoint.
+    interval examples:
+      - "5"  : 5-minute
+      - "h"  : hourly
+      - "d"  : daily
+    Returns dict with: close, bar_time (string), bar_date (string), source
+    """
+    url = STOOQ_BARS.format(symbol=symbol.lower(), interval=interval)
+    text = http_get(url)
+
+    lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
+    if len(lines) < 2:
+        raise ValueError(f"No bars rows for {symbol} interval={interval}")
+
+    header = lines[0].split(",")
+    last = lines[-1].split(",")
+    if len(last) < 5:
+        raise ValueError(f"Malformed bars row for {symbol} interval={interval}: {lines[-1]}")
+
+    # Bars format typically: Date,Open,High,Low,Close,Volume
+    # For intraday (5/h), Date may include time component (depends on Stooq)
+    # We'll store it as-is.
+    bar_dt = last[0].strip()
+    close = float(last[4])
+
+    return {
+        "close": close,
+        "bar_dt": bar_dt,
+        "source": f"stooq_bars_{interval}",
+    }
+
+
+def infer_currency_from_ticker(ticker: str) -> str:
+    t = (ticker or "").strip().upper()
+    if t.endswith(".US"):
+        return "USD"
+    if t.endswith(".UK"):
+        return "GBP"
+    if t == "CASH":
+        return "GBP"
+    return "GBP"
+
+
 # -------------------------
 # Portfolio weights parsing
 # -------------------------
@@ -195,6 +252,10 @@ def extract_weights(pdef: dict) -> dict:
 # FX conversion (with TTL)
 # -------------------------
 def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
+    """
+    Returns GBP per unit of from_ccy (e.g. USD -> GBP).
+    Uses intraday bars for gbpusd where possible; falls back to quote close.
+    """
     c = (from_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -205,32 +266,49 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
     def get_cached(key: str):
         v = fx_cache.get(key)
         if isinstance(v, dict) and "rate" in v and "updated_at" in v:
-            if is_fresh(v.get("updated_at"), CACHE_TTL_SECONDS):
+            if is_fresh(v.get("updated_at"), FX_CACHE_TTL_SECONDS):
                 try:
                     return float(v["rate"])
                 except Exception:
                     return None
         return None
 
-    def set_cached(key: str, rate: float):
+    def set_cached(key: str, rate: float, meta: dict | None = None):
         fx_cache[key] = {"rate": float(rate), "updated_at": now}
+        if meta:
+            fx_cache[key].update(meta)
 
     if c == "USD":
         cached = get_cached("USDGBP")
         if cached is not None:
             return cached
-        q = stooq_quote("gbpusd")
-        gbp_usd = float(q["close"])  # USD per GBP
+
+        # Prefer intraday bars for gbpusd
+        gbp_usd = None
+        meta = {}
+        try:
+            b = stooq_latest_close_from_bars("gbpusd", "5")
+            gbp_usd = float(b["close"])  # USD per GBP
+            meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
+        except Exception:
+            q = stooq_quote("gbpusd")
+            gbp_usd = float(q["close"])
+            meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+
         if gbp_usd <= 0:
             raise ValueError("Invalid GBPUSD rate from Stooq")
         usd_gbp = 1.0 / gbp_usd
-        set_cached("USDGBP", usd_gbp)
+        set_cached("USDGBP", usd_gbp, meta)
         return usd_gbp
 
     raise ValueError(f"Unsupported currency for FX: {c}")
 
 
 def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
+    """
+    Returns units of to_ccy per GBP (e.g. GBP -> USD).
+    Uses intraday bars for gbpusd where possible; falls back to quote close.
+    """
     c = (to_ccy or "GBP").upper()
     if c == "GBP":
         return 1.0
@@ -241,66 +319,81 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
     def get_cached(key: str):
         v = fx_cache.get(key)
         if isinstance(v, dict) and "rate" in v and "updated_at" in v:
-            if is_fresh(v.get("updated_at"), CACHE_TTL_SECONDS):
+            if is_fresh(v.get("updated_at"), FX_CACHE_TTL_SECONDS):
                 try:
                     return float(v["rate"])
                 except Exception:
                     return None
         return None
 
-    def set_cached(key: str, rate: float):
+    def set_cached(key: str, rate: float, meta: dict | None = None):
         fx_cache[key] = {"rate": float(rate), "updated_at": now}
+        if meta:
+            fx_cache[key].update(meta)
 
     if c == "USD":
         cached = get_cached("GBPUSD")
         if cached is not None:
             return cached
-        q = stooq_quote("gbpusd")
-        gbp_usd = float(q["close"])  # USD per GBP
+
+        gbp_usd = None
+        meta = {}
+        try:
+            b = stooq_latest_close_from_bars("gbpusd", "5")
+            gbp_usd = float(b["close"])  # USD per GBP
+            meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
+        except Exception:
+            q = stooq_quote("gbpusd")
+            gbp_usd = float(q["close"])
+            meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+
         if gbp_usd <= 0:
             raise ValueError("Invalid GBPUSD rate from Stooq")
-        set_cached("GBPUSD", gbp_usd)
+        set_cached("GBPUSD", gbp_usd, meta)
         return gbp_usd
 
     raise ValueError(f"Unsupported currency for FX: {c}")
 
 
 # -------------------------
-# Pricing (with TTL)
+# Pricing (with TTL) — prefer intraday bars
 # -------------------------
 def price_for_holding(ticker: str, state_cache: dict) -> float:
+    """
+    Returns a "current" price suitable for 'since last run'.
+    - Prefer Stooq 5-minute bars latest close
+    - Fall back to Stooq quote close
+    Cached for PRICE_CACHE_TTL_SECONDS.
+    """
     px_cache = state_cache.setdefault("price_cache", {})
     now = utc_now_iso()
 
     cached = px_cache.get(ticker)
     if isinstance(cached, dict) and "price" in cached and "updated_at" in cached:
-        if is_fresh(cached.get("updated_at"), CACHE_TTL_SECONDS):
+        if is_fresh(cached.get("updated_at"), PRICE_CACHE_TTL_SECONDS):
             try:
                 return float(cached["price"])
             except Exception:
                 pass
 
-    q = stooq_quote(ticker)
-    close = float(q["close"])
+    price = None
+    meta = {}
+    # Try intraday first
+    try:
+        b = stooq_latest_close_from_bars(ticker, "5")
+        price = float(b["close"])
+        meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
+    except Exception:
+        q = stooq_quote(ticker)
+        price = float(q["close"])
+        meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+
     px_cache[ticker] = {
-        "price": close,
-        "quote_date": q.get("date"),
-        "quote_time": q.get("time"),
+        "price": float(price),
         "updated_at": now,
-        "source": "stooq",
+        **meta,
     }
-    return close
-
-
-def infer_currency_from_ticker(ticker: str) -> str:
-    t = (ticker or "").strip().upper()
-    if t.endswith(".US"):
-        return "USD"
-    if t.endswith(".UK"):
-        return "GBP"
-    if t == "CASH":
-        return "GBP"
-    return "GBP"
+    return float(price)
 
 
 # -------------------------
@@ -581,7 +674,6 @@ def ensure_sp500_position(state: dict) -> dict:
     b = load_json(BENCHMARKS_PATH, {})
     sp = b.get("sp500") if isinstance(b, dict) else None
     if not isinstance(sp, dict):
-        # default still works if file missing, but keep it explicit
         sp = {"name": "S&P 500", "ticker": "SPY.US"}
 
     ticker = sp.get("ticker", "SPY.US")
@@ -629,7 +721,7 @@ def sp500_snapshot(state: dict, prev_latest: dict) -> dict:
     total_change_gbp = clamp_neg_zero(round(value_gbp - inception, 2))
     total_change_pct = clamp_neg_zero(round((total_change_gbp / inception * 100.0) if inception else 0.0, 4))
 
-    # daily vs prev snapshot
+    # since last run vs prev snapshot
     prev_val = None
     try:
         prev_val = prev_latest.get("benchmarks", {}).get("sp500", {}).get("total_value_gbp")
@@ -745,7 +837,7 @@ def main():
     cname = cdef.get("name") if isinstance(cdef, dict) and cdef.get("name") else "Portfolio C"
     latest["portfolio_C"] = value_from_state_shares("portfolio_C", cname, state, prev_latest)
 
-    # Portfolio-level daily change vs prev total
+    # Portfolio-level since last run change vs prev total
     for pkey in ("portfolio_A", "portfolio_B", "portfolio_C"):
         pdata = latest.get(pkey)
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
