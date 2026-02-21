@@ -1,6 +1,6 @@
 {
-  "as_of_utc": "2026-02-20T23:36:37Z",
-  "as_of_uk_date": "2026-02-20",
+  "as_of_utc": "2026-02-21T02:41:06Z",
+  "as_of_uk_date": "2026-02-21",
   "portfolio_A": {
     "key": "portfolio_A",
     "name": "Portfolio A \u2014 High-Conviction Growth",
@@ -77,17 +77,17 @@
         "ticker": "GOOGL.US",
         "qty": 430.47001411,
         "currency": "USD",
-        "price": 315.17,
+        "price": 315.205,
         "fx_to_gbp": 0.7413393,
-        "value_gbp": 100578.42,
+        "value_gbp": 100589.59,
         "type": "asset",
-        "change_price_vs_prev": 0.0,
-        "change_value_gbp_vs_prev": 0.0,
-        "change_pct_vs_prev": 0.0,
-        "price_direction": "flat",
+        "change_price_vs_prev": 0.035,
+        "change_value_gbp_vs_prev": 11.17,
+        "change_pct_vs_prev": 0.0111,
+        "price_direction": "up",
         "inception_value_gbp": 100000.0,
-        "total_change_gbp_since_start": 578.42,
-        "total_change_pct_since_start": 0.5784,
+        "total_change_gbp_since_start": 589.59,
+        "total_change_pct_since_start": 0.5896,
         "total_direction": "up"
       },
       {
@@ -193,12 +193,12 @@
         "total_direction": "down"
       }
     ],
-    "total_value_gbp": 983467.29,
+    "total_value_gbp": 983478.46,
     "inception_value_gbp": 1000000.0,
-    "total_change_gbp_since_start": -16532.71,
-    "total_change_pct_since_start": -1.6533,
+    "total_change_gbp_since_start": -16521.54,
+    "total_change_pct_since_start": -1.6522,
     "total_direction": "down",
-    "change_gbp_vs_prev": 0.0
+    "change_gbp_vs_prev": 11.17
   },
   "portfolio_B": {
     "key": "portfolio_B",
