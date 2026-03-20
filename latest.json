@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-03-20T22:37:43Z",
+  "as_of_utc": "2026-03-20T23:37:04Z",
   "as_of_uk_date": "2026-03-20",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -64,10 +64,10 @@
         "fx_to_gbp": 0.74959709,
         "value_gbp": 45348.67,
         "type": "asset",
-        "change_price_vs_prev": 0.01,
-        "change_value_gbp_vs_prev": 1.46,
-        "change_pct_vs_prev": 0.0032,
-        "price_direction": "up",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat",
         "inception_value_gbp": 50000.0,
         "total_change_gbp_since_start": -4651.33,
         "total_change_pct_since_start": -9.3027,
@@ -198,7 +198,7 @@
     "total_change_gbp_since_start": -59101.13,
     "total_change_pct_since_start": -5.9101,
     "total_direction": "down",
-    "change_gbp_vs_prev": 1.46
+    "change_gbp_vs_prev": 0.0
   },
   "portfolio_B": {
     "key": "portfolio_B",
@@ -513,10 +513,10 @@
         "fx_to_gbp": 0.74959709,
         "value_gbp": 110452.79,
         "type": "asset",
-        "change_price_vs_prev": -0.01,
-        "change_value_gbp_vs_prev": -1.7,
-        "change_pct_vs_prev": -0.0015,
-        "price_direction": "down",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat",
         "inception_value_gbp": 115391.47,
         "total_change_gbp_since_start": -4938.68,
         "total_change_pct_since_start": -4.2799,
@@ -562,7 +562,7 @@
     "total_change_gbp_since_start": -28860.06,
     "total_change_pct_since_start": -2.886,
     "total_direction": "down",
-    "change_gbp_vs_prev": -1.7
+    "change_gbp_vs_prev": 0.0
   },
   "benchmarks": {
     "sp500": {
@@ -576,8 +576,8 @@
       "inception_value_gbp": 1000000.0,
       "total_change_gbp_since_start": -42799.36,
       "total_change_pct_since_start": -4.2799,
-      "change_value_gbp_vs_prev": -14.76,
-      "change_pct_vs_prev": -0.0015,
+      "change_value_gbp_vs_prev": 0.0,
+      "change_pct_vs_prev": 0.0,
       "direction": "down"
     }
   }
