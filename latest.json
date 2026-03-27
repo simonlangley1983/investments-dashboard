@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-03-27T22:42:06Z",
+  "as_of_utc": "2026-03-27T23:40:18Z",
   "as_of_uk_date": "2026-03-27",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -496,10 +496,10 @@
         "fx_to_gbp": 0.75405114,
         "value_gbp": 4447.54,
         "type": "asset",
-        "change_price_vs_prev": -0.005,
-        "change_value_gbp_vs_prev": -0.23,
-        "change_pct_vs_prev": -0.0051,
-        "price_direction": "down",
+        "change_price_vs_prev": 0.0,
+        "change_value_gbp_vs_prev": 0.0,
+        "change_pct_vs_prev": 0.0,
+        "price_direction": "flat",
         "inception_value_gbp": 4421.89,
         "total_change_gbp_since_start": 25.65,
         "total_change_pct_since_start": 0.5801,
@@ -562,7 +562,7 @@
     "total_change_gbp_since_start": -30467.76,
     "total_change_pct_since_start": -3.0468,
     "total_direction": "down",
-    "change_gbp_vs_prev": -0.23
+    "change_gbp_vs_prev": 0.0
   },
   "benchmarks": {
     "sp500": {
