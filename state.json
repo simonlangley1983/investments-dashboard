@@ -31,196 +31,196 @@
       "MSTR.US": 266.0160205647834
     }
   },
-  "last_run_utc": "2026-04-09T11:07:52Z",
+  "last_run_utc": "2026-04-09T14:03:10Z",
   "price_cache": {
     "NVDA.US": {
-      "price": 182.08,
-      "updated_at": "2026-04-09T11:07:52Z",
+      "price": 181.77,
+      "updated_at": "2026-04-09T14:03:10Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:08"
     },
     "MSFT.US": {
-      "price": 374.33,
-      "updated_at": "2026-04-09T11:07:55Z",
+      "price": 369.74,
+      "updated_at": "2026-04-09T14:03:13Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:18"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:11"
     },
     "ASML.US": {
-      "price": 1421.05,
-      "updated_at": "2026-04-09T11:07:57Z",
+      "price": 1429.71,
+      "updated_at": "2026-04-09T14:03:15Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:18"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:09"
     },
     "AVGO.US": {
-      "price": 350.63,
-      "updated_at": "2026-04-09T11:07:58Z",
+      "price": 354.44,
+      "updated_at": "2026-04-09T14:03:16Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:12"
     },
     "GOOGL.US": {
-      "price": 317.32,
-      "updated_at": "2026-04-09T11:08:00Z",
+      "price": 313.09,
+      "updated_at": "2026-04-09T14:03:16Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:14"
     },
     "AMZN.US": {
-      "price": 221.25,
-      "updated_at": "2026-04-09T11:08:01Z",
+      "price": 225.115,
+      "updated_at": "2026-04-09T14:03:18Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:16"
     },
     "META.US": {
-      "price": 612.42,
-      "updated_at": "2026-04-09T11:08:02Z",
+      "price": 629.22,
+      "updated_at": "2026-04-09T14:03:19Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:17"
     },
     "QQQ.US": {
-      "price": 606.09,
-      "updated_at": "2026-04-09T11:08:04Z",
+      "price": 605.56,
+      "updated_at": "2026-04-09T14:03:20Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:18"
     },
     "TQQQ.US": {
-      "price": 48.0,
-      "updated_at": "2026-04-09T11:08:05Z",
+      "price": 47.91,
+      "updated_at": "2026-04-09T14:03:21Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:18"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:19"
     },
     "PLTR.US": {
-      "price": 140.76,
-      "updated_at": "2026-04-09T11:08:06Z",
+      "price": 132.09,
+      "updated_at": "2026-04-09T14:03:22Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:21"
     },
     "COIN.US": {
-      "price": 175.09,
-      "updated_at": "2026-04-09T11:08:07Z",
+      "price": 171.04,
+      "updated_at": "2026-04-09T14:03:23Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:18"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:21"
     },
     "SMCI.US": {
-      "price": 23.37,
-      "updated_at": "2026-04-09T11:08:09Z",
+      "price": 23.655,
+      "updated_at": "2026-04-09T14:03:24Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:21"
     },
     "ARM.US": {
-      "price": 148.91,
-      "updated_at": "2026-04-09T11:08:10Z",
+      "price": 148.76,
+      "updated_at": "2026-04-09T14:03:25Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:22"
     },
     "AMD.US": {
-      "price": 231.82,
-      "updated_at": "2026-04-09T11:08:11Z",
+      "price": 234.39,
+      "updated_at": "2026-04-09T14:03:26Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:23"
     },
     "ALAB.US": {
-      "price": 125.46,
-      "updated_at": "2026-04-09T11:08:13Z",
+      "price": 124.61,
+      "updated_at": "2026-04-09T14:03:27Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:23"
     },
     "SOXL.US": {
-      "price": 67.5,
-      "updated_at": "2026-04-09T11:08:14Z",
+      "price": 69.76,
+      "updated_at": "2026-04-09T14:03:28Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:21"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:27"
     },
     "SNOW.US": {
-      "price": 149.99,
-      "updated_at": "2026-04-09T11:08:15Z",
+      "price": 142.395,
+      "updated_at": "2026-04-09T14:03:29Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:22"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:28"
     },
     "NET.US": {
-      "price": 211.25,
-      "updated_at": "2026-04-09T11:08:16Z",
+      "price": 205.115,
+      "updated_at": "2026-04-09T14:03:30Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:48"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:28"
     },
     "MARA.US": {
-      "price": 9.5,
-      "updated_at": "2026-04-09T11:08:18Z",
+      "price": 9.475,
+      "updated_at": "2026-04-09T14:03:31Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:27"
     },
     "MSTR.US": {
-      "price": 128.3,
-      "updated_at": "2026-04-09T11:08:19Z",
+      "price": 127.64,
+      "updated_at": "2026-04-09T14:03:33Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:31"
     },
     "SPY.US": {
-      "price": 676.01,
-      "updated_at": "2026-04-09T11:08:26Z",
+      "price": 675.06,
+      "updated_at": "2026-04-09T14:03:37Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:21"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:35"
     },
     "EWJV.US": {
-      "price": 44.86,
-      "updated_at": "2026-04-09T11:08:20Z",
+      "price": 43.87,
+      "updated_at": "2026-04-09T14:03:34Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "21:59:47"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:47:07"
     },
     "ISF.UK": {
-      "price": 1036.8,
-      "updated_at": "2026-04-09T11:08:22Z",
+      "price": 1037.6,
+      "updated_at": "2026-04-09T14:03:34Z",
       "source": "stooq_quote",
       "quote_date": "2026-04-09",
-      "quote_time": "12:50:08"
+      "quote_time": "15:45:05"
     },
     "SMEA.UK": {
-      "price": 8466.0,
-      "updated_at": "2026-04-09T11:08:23Z",
+      "price": 8487.0,
+      "updated_at": "2026-04-09T14:03:35Z",
       "source": "stooq_quote",
       "quote_date": "2026-04-09",
-      "quote_time": "12:51:31"
+      "quote_time": "15:37:16"
     },
     "AGG.US": {
-      "price": 99.43,
-      "updated_at": "2026-04-09T11:08:24Z",
+      "price": 99.3799,
+      "updated_at": "2026-04-09T14:03:36Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:19"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:29"
     },
     "FXI.US": {
-      "price": 36.35,
-      "updated_at": "2026-04-09T11:08:27Z",
+      "price": 36.075,
+      "updated_at": "2026-04-09T14:03:38Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:20"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:33"
     },
     "VGT.US": {
-      "price": 739.1,
-      "updated_at": "2026-04-09T11:08:28Z",
+      "price": 737.18,
+      "updated_at": "2026-04-09T14:03:39Z",
       "source": "stooq_quote",
-      "quote_date": "2026-04-08",
-      "quote_time": "22:00:20"
+      "quote_date": "2026-04-09",
+      "quote_time": "15:48:22"
     }
   },
   "fx_cache": {
@@ -229,11 +229,11 @@
       "updated_at": "2026-01-05T21:44:13Z"
     },
     "USDGBP": {
-      "rate": 0.7460348249056267,
-      "updated_at": "2026-04-09T11:07:54Z",
+      "rate": 0.7450287953629408,
+      "updated_at": "2026-04-09T14:03:12Z",
       "source": "stooq_quote",
       "quote_date": "2026-04-09",
-      "quote_time": "13:07:52"
+      "quote_time": "16:03:12"
     }
   },
   "inception_allocations_gbp": {
