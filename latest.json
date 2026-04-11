@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-04-10T23:45:17Z",
+  "as_of_utc": "2026-04-11T02:55:45Z",
   "as_of_uk_date": "2026-04-11",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -458,34 +458,34 @@
         "ticker": "ISF.UK",
         "qty": 226.85936505,
         "currency": "GBP",
-        "price": 1040.19,
+        "price": 1038.8,
         "fx_to_gbp": 1.0,
-        "value_gbp": 235976.84,
+        "value_gbp": 235661.51,
         "type": "asset",
-        "change_price_vs_prev": 0.0,
-        "change_value_gbp_vs_prev": 0.0,
-        "change_pct_vs_prev": 0.0,
-        "price_direction": "flat",
+        "change_price_vs_prev": -1.39,
+        "change_value_gbp_vs_prev": -315.33,
+        "change_pct_vs_prev": -0.1336,
+        "price_direction": "down",
         "inception_value_gbp": 220802.22,
-        "total_change_gbp_since_start": 15174.62,
-        "total_change_pct_since_start": 6.8725,
+        "total_change_gbp_since_start": 14859.29,
+        "total_change_pct_since_start": 6.7297,
         "total_direction": "up"
       },
       {
         "ticker": "SMEA.UK",
         "qty": 8.51782919,
         "currency": "GBP",
-        "price": 8557.24,
+        "price": 8552.0,
         "fx_to_gbp": 1.0,
-        "value_gbp": 72889.11,
+        "value_gbp": 72844.48,
         "type": "asset",
-        "change_price_vs_prev": 0.0,
-        "change_value_gbp_vs_prev": 0.0,
-        "change_pct_vs_prev": 0.0,
-        "price_direction": "flat",
+        "change_price_vs_prev": -5.24,
+        "change_value_gbp_vs_prev": -44.63,
+        "change_pct_vs_prev": -0.0612,
+        "price_direction": "down",
         "inception_value_gbp": 70510.59,
-        "total_change_gbp_since_start": 2378.52,
-        "total_change_pct_since_start": 3.3733,
+        "total_change_gbp_since_start": 2333.89,
+        "total_change_pct_since_start": 3.31,
         "total_direction": "up"
       },
       {
@@ -557,12 +557,12 @@
         "total_direction": "down"
       }
     ],
-    "total_value_gbp": 1026816.28,
+    "total_value_gbp": 1026456.31,
     "inception_value_gbp": 1000000.0,
-    "total_change_gbp_since_start": 26816.28,
-    "total_change_pct_since_start": 2.6816,
+    "total_change_gbp_since_start": 26456.31,
+    "total_change_pct_since_start": 2.6456,
     "total_direction": "up",
-    "change_gbp_vs_prev": 0.0
+    "change_gbp_vs_prev": -359.97
   },
   "benchmarks": {
     "sp500": {
