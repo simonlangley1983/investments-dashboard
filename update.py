@@ -15,6 +15,14 @@ Change (Jan 2026):
     - Fall back to quote close if intraday is unavailable
     - Use shorter TTLs suitable for intraday prices/FX
 
+Change (Apr 2026):
+- Added split detection and automatic quantity adjustment.
+- If a ticker appears to have undergone a stock split, we:
+    - multiply stored quantity by the inferred split ratio
+    - preserve economic value
+    - prevent fake crashes/gains caused by post-split price changes
+- Split handling is persisted in state.json so it only applies once.
+
 Portfolios:
 - A/B definitions + weights live in portfolios.json (used ONLY to initialise shares once)
 - C definition + weights live in portfolio_c.json (used ONLY to initialise shares once)
@@ -30,6 +38,7 @@ Outputs:
 
 import csv
 import json
+import math
 import os
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
@@ -69,6 +78,11 @@ PORT_STATE_KEY = {
     "portfolio_B": "B",
     "portfolio_C": "C",
 }
+
+# Split detection
+KNOWN_SPLIT_RATIOS = [2, 3, 4, 5, 8, 10]
+SPLIT_DETECTION_TOLERANCE = 0.18  # 18% either side of ideal ratio
+MIN_SPLIT_TRIGGER_RATIO = 1.6     # ignore smaller moves
 
 
 # -------------------------
@@ -188,14 +202,10 @@ def stooq_latest_close_from_bars(symbol: str, interval: str) -> dict:
     if len(lines) < 2:
         raise ValueError(f"No bars rows for {symbol} interval={interval}")
 
-    header = lines[0].split(",")
     last = lines[-1].split(",")
     if len(last) < 5:
         raise ValueError(f"Malformed bars row for {symbol} interval={interval}: {lines[-1]}")
 
-    # Bars format typically: Date,Open,High,Low,Close,Volume
-    # For intraday (5/h), Date may include time component (depends on Stooq)
-    # We'll store it as-is.
     bar_dt = last[0].strip()
     close = float(last[4])
 
@@ -283,12 +293,11 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
         if cached is not None:
             return cached
 
-        # Prefer intraday bars for gbpusd
         gbp_usd = None
         meta = {}
         try:
             b = stooq_latest_close_from_bars("gbpusd", "5")
-            gbp_usd = float(b["close"])  # USD per GBP
+            gbp_usd = float(b["close"])
             meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
         except Exception:
             q = stooq_quote("gbpusd")
@@ -340,7 +349,7 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
         meta = {}
         try:
             b = stooq_latest_close_from_bars("gbpusd", "5")
-            gbp_usd = float(b["close"])  # USD per GBP
+            gbp_usd = float(b["close"])
             meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
         except Exception:
             q = stooq_quote("gbpusd")
@@ -378,7 +387,6 @@ def price_for_holding(ticker: str, state_cache: dict) -> float:
 
     price = None
     meta = {}
-    # Try intraday first
     try:
         b = stooq_latest_close_from_bars(ticker, "5")
         price = float(b["close"])
@@ -396,6 +404,100 @@ def price_for_holding(ticker: str, state_cache: dict) -> float:
     return float(price)
 
 
+def infer_split_ratio(prev_price: float, new_price: float):
+    """
+    Infer a likely stock split ratio from a large step down in price.
+    Example:
+      prev 806, new 100.8 -> ratio ~8
+    """
+    if prev_price is None or new_price is None:
+        return None
+    if prev_price <= 0 or new_price <= 0:
+        return None
+
+    raw_ratio = prev_price / new_price
+    if raw_ratio < MIN_SPLIT_TRIGGER_RATIO:
+        return None
+
+    best = None
+    best_diff = None
+
+    for r in KNOWN_SPLIT_RATIOS:
+        diff = abs(raw_ratio - r) / r
+        if best_diff is None or diff < best_diff:
+            best = r
+            best_diff = diff
+
+    if best is not None and best_diff is not None and best_diff <= SPLIT_DETECTION_TOLERANCE:
+        return best
+    return None
+
+
+def maybe_apply_split_to_state(state: dict, portfolio_key: str, ticker: str, prev_latest: dict) -> int | None:
+    """
+    Detect likely split by comparing previous displayed price with newly fetched price.
+    If detected and not already applied, multiply stored quantity and record it in state.
+    Returns applied ratio if a split was applied, else None.
+    """
+    skey = PORT_STATE_KEY[portfolio_key]
+    shares = state.get(skey, {}).get("shares", {})
+    if not isinstance(shares, dict):
+        return None
+
+    ticker_upper = str(ticker).strip().upper()
+    actual_key = None
+    for k in shares.keys():
+        if str(k).strip().upper() == ticker_upper:
+            actual_key = k
+            break
+    if actual_key is None:
+        return None
+
+    prev_idx = build_prev_holdings_index(prev_latest, portfolio_key)
+    prev = prev_idx.get(ticker_upper)
+    if not isinstance(prev, dict):
+        return None
+
+    prev_price = prev.get("price")
+    if prev_price is None:
+        return None
+
+    try:
+        prev_price = float(prev_price)
+    except Exception:
+        return None
+
+    try:
+        new_price = price_for_holding(actual_key, state)
+    except Exception:
+        return None
+
+    ratio = infer_split_ratio(prev_price, new_price)
+    if ratio is None:
+        return None
+
+    applied_splits = state.setdefault("applied_splits", {})
+    portfolio_splits = applied_splits.setdefault(portfolio_key, {})
+    already = portfolio_splits.get(ticker_upper)
+    if already == ratio:
+        return None
+
+    try:
+        old_qty = float(shares[actual_key])
+    except Exception:
+        return None
+
+    new_qty = old_qty * ratio
+    shares[actual_key] = new_qty
+    portfolio_splits[ticker_upper] = ratio
+
+    px_cache = state.setdefault("price_cache", {})
+    if actual_key in px_cache:
+        px_cache.pop(actual_key, None)
+
+    return ratio
+
+
 # -------------------------
 # Shares initialisation (ONE TIME)
 # -------------------------
@@ -407,7 +509,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
     """
     start_gbp_ab = float(portfolios_root.get("start_gbp", BASELINE_GBP))
 
-    # A/B
     for pkey in ("portfolio_A", "portfolio_B"):
         pdef = portfolios_root.get(pkey)
         if not isinstance(pdef, dict):
@@ -443,7 +544,6 @@ def init_state_shares_from_weights(portfolios_root: dict, state: dict):
 
         state.setdefault(skey, {})["shares"] = shares
 
-    # C
     cdef = load_json(PORTFOLIO_C_PATH, {})
     if isinstance(cdef, dict):
         c_start = float(cdef.get("start_gbp", BASELINE_GBP))
@@ -488,7 +588,6 @@ def ensure_inception_allocations(portfolios_root: dict, state: dict):
 
     start_gbp_ab = float(portfolios_root.get("start_gbp", BASELINE_GBP))
 
-    # A/B
     for pkey in ("portfolio_A", "portfolio_B"):
         existing = store.get(pkey)
         if isinstance(existing, dict) and existing:
@@ -510,7 +609,6 @@ def ensure_inception_allocations(portfolios_root: dict, state: dict):
 
         store[pkey] = allocs
 
-    # C
     existing = store.get("portfolio_C")
     if not (isinstance(existing, dict) and existing):
         cdef = load_json(PORTFOLIO_C_PATH, {})
@@ -579,6 +677,13 @@ def value_from_state_shares(portfolio_key: str, portfolio_name: str, state: dict
         shares = {}
 
     prev_idx = build_prev_holdings_index(prev_latest, portfolio_key)
+
+    for ticker in list(shares.keys()):
+        if str(ticker).strip().upper() == "CASH":
+            continue
+        maybe_apply_split_to_state(state, portfolio_key, ticker, prev_latest)
+
+    shares = state.get(skey, {}).get("shares", {})
 
     holdings = []
     total_gbp = 0.0
@@ -688,8 +793,7 @@ def ensure_sp500_position(state: dict) -> dict:
     if s.get("qty") is not None:
         return s
 
-    # initialise using current price/fx so inception is £1m
-    ccy = infer_currency_from_ticker(ticker)  # USD
+    ccy = infer_currency_from_ticker(ticker)
     price0 = price_for_holding(ticker, state)
     gbp_to_usd0 = gbp_to_ccy_rate(ccy, state)
     alloc_usd = BASELINE_GBP * gbp_to_usd0
@@ -721,7 +825,6 @@ def sp500_snapshot(state: dict, prev_latest: dict) -> dict:
     total_change_gbp = clamp_neg_zero(round(value_gbp - inception, 2))
     total_change_pct = clamp_neg_zero(round((total_change_gbp / inception * 100.0) if inception else 0.0, 4))
 
-    # since last run vs prev snapshot
     prev_val = None
     try:
         prev_val = prev_latest.get("benchmarks", {}).get("sp500", {}).get("total_value_gbp")
@@ -764,7 +867,6 @@ def upsert_daily_history(latest: dict):
     if not isinstance(history, list):
         history = []
 
-    # baseline row
     if not any(isinstance(r, dict) and r.get("date") == BASELINE_UK_DATE for r in history):
         history.append(
             {
@@ -787,7 +889,6 @@ def upsert_daily_history(latest: dict):
     if isinstance(sp, dict) and sp.get("total_value_gbp") is not None:
         row["benchmark_sp500"] = round(float(sp["total_value_gbp"]), 2)
 
-    # upsert
     for r in history:
         if isinstance(r, dict) and r.get("date") == today:
             r.update(row)
@@ -814,17 +915,14 @@ def main():
     if not isinstance(prev_latest, dict):
         prev_latest = {}
 
-    # Initialise shares + inception allocations (only if missing)
     init_state_shares_from_weights(portfolios_root, state)
     ensure_inception_allocations(portfolios_root, state)
 
-    # Build latest
     latest = {
         "as_of_utc": utc_now_iso(),
         "as_of_uk_date": uk_today_iso(),
     }
 
-    # Portfolio A/B names from portfolios.json
     for pkey in ("portfolio_A", "portfolio_B"):
         pdef = portfolios_root.get(pkey, {})
         pname = pdef.get("name") if isinstance(pdef, dict) else None
@@ -832,12 +930,10 @@ def main():
             pname = "Portfolio A" if pkey == "portfolio_A" else "Portfolio B"
         latest[pkey] = value_from_state_shares(pkey, pname, state, prev_latest)
 
-    # Portfolio C name from portfolio_c.json
     cdef = load_json(PORTFOLIO_C_PATH, {})
     cname = cdef.get("name") if isinstance(cdef, dict) and cdef.get("name") else "Portfolio C"
     latest["portfolio_C"] = value_from_state_shares("portfolio_C", cname, state, prev_latest)
 
-    # Portfolio-level since last run change vs prev total
     for pkey in ("portfolio_A", "portfolio_B", "portfolio_C"):
         pdata = latest.get(pkey)
         if not isinstance(pdata, dict) or "total_value_gbp" not in pdata:
@@ -852,15 +948,12 @@ def main():
         else:
             pdata["change_gbp_vs_prev"] = 0.0
 
-    # Benchmark snapshot
     latest["benchmarks"] = {"sp500": sp500_snapshot(state, prev_latest)}
 
-    # Persist
     state["last_run_utc"] = latest["as_of_utc"]
     save_json(LATEST_PATH, latest)
     save_json(STATE_PATH, state)
 
-    # History
     upsert_daily_history(latest)
 
 
