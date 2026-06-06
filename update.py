@@ -42,6 +42,7 @@ import math
 import os
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
+from urllib.parse import quote
 
 try:
     from zoneinfo import ZoneInfo  # Python 3.9+
@@ -63,6 +64,16 @@ BENCHMARKS_PATH = os.path.join(ROOT, "benchmarks.json")
 # Stooq endpoints
 STOOQ_QUOTE = "https://stooq.com/q/l/?s={symbol}&f=sd2t2ohlcv&h&e=csv"
 STOOQ_BARS = "https://stooq.com/q/d/l/?s={symbol}&i={interval}"  # interval: 5 (5-min), h (hourly), d (daily)
+
+# Yahoo Finance fallback endpoint (no API key required).
+# Used when Stooq returns anti-bot/browser-verification HTML instead of CSV.
+YAHOO_CHART = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range={range}&interval={interval}&includePrePost=true"
+
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0 Safari/537.36"
+)
 
 # TTLs (intraday friendly)
 PRICE_CACHE_TTL_SECONDS = 4 * 60     # 4 minutes
@@ -146,17 +157,46 @@ def save_json(path: str, data):
 
 
 # -------------------------
-# HTTP / Stooq
+# HTTP / Stooq / Yahoo fallback
 # -------------------------
 def http_get(url: str, timeout: int = 25) -> str:
-    req = Request(url, headers={"User-Agent": "invest-game-bot"})
+    req = Request(
+        url,
+        headers={
+            "User-Agent": BROWSER_USER_AGENT,
+            "Accept": "text/csv,application/json,text/plain,*/*;q=0.8",
+            "Accept-Language": "en-GB,en;q=0.9",
+            "Cache-Control": "no-cache",
+        },
+    )
     with urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", errors="replace")
+
+
+def looks_like_html_or_challenge(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    return (
+        t.startswith("<!doctype html")
+        or t.startswith("<html")
+        or "<script" in t[:2000]
+        or "requires javascript" in t
+        or "__verify" in t
+        or "verify your browser" in t
+    )
+
+
+def ensure_not_html_challenge(text: str, symbol: str, source: str):
+    if looks_like_html_or_challenge(text):
+        snippet = " ".join((text or "").split())[:240]
+        raise ValueError(f"{source} returned HTML/browser verification for {symbol}: {snippet}")
 
 
 def stooq_quote(symbol: str) -> dict:
     url = STOOQ_QUOTE.format(symbol=symbol)
     text = http_get(url)
+    ensure_not_html_challenge(text, symbol, "Stooq quote")
 
     reader = csv.DictReader(text.splitlines())
     rows = list(reader)
@@ -197,6 +237,7 @@ def stooq_latest_close_from_bars(symbol: str, interval: str) -> dict:
     """
     url = STOOQ_BARS.format(symbol=symbol.lower(), interval=interval)
     text = http_get(url)
+    ensure_not_html_challenge(text, symbol, f"Stooq bars interval={interval}")
 
     lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
     if len(lines) < 2:
@@ -215,6 +256,96 @@ def stooq_latest_close_from_bars(symbol: str, interval: str) -> dict:
         "source": f"stooq_bars_{interval}",
     }
 
+
+def yahoo_symbol_from_ticker(ticker: str) -> str:
+    """
+    Convert dashboard/Stooq-ish symbols to Yahoo Finance symbols.
+    Examples:
+      NVDA.US -> NVDA
+      SPY.US  -> SPY
+      ISF.UK  -> ISF.L
+      ISF.LN  -> ISF.L
+      gbpusd  -> GBPUSD=X
+    """
+    t = (ticker or "").strip().upper()
+    if t in ("GBPUSD", "GBPUSD=X"):
+        return "GBPUSD=X"
+    if t in ("USDGBP", "USDGBP=X"):
+        return "GBPUSD=X"
+    if t.endswith(".US"):
+        return t[:-3]
+    if t.endswith(".UK"):
+        return t[:-3] + ".L"
+    if t.endswith(".LN"):
+        return t[:-3] + ".L"
+    if t.endswith(".LON"):
+        return t[:-4] + ".L"
+    return t
+
+
+def yahoo_chart_latest_price(ticker: str) -> dict:
+    """
+    Latest usable price from Yahoo chart endpoint.
+    This is intentionally dependency-free. It is used as a fallback when Stooq blocks GitHub Actions.
+    """
+    symbol = yahoo_symbol_from_ticker(ticker)
+    errors = []
+
+    for rng, interval in (("1d", "1m"), ("5d", "5m"), ("1mo", "1d")):
+        url = YAHOO_CHART.format(symbol=quote(symbol, safe=""), range=rng, interval=interval)
+        try:
+            text = http_get(url)
+            ensure_not_html_challenge(text, ticker, "Yahoo chart")
+            payload = json.loads(text)
+            result = (payload.get("chart", {}).get("result") or [None])[0]
+            if not isinstance(result, dict):
+                errors.append(f"{rng}/{interval}: no chart result")
+                continue
+
+            meta = result.get("meta") or {}
+            price = meta.get("regularMarketPrice")
+            if price is None:
+                quote_block = ((result.get("indicators") or {}).get("quote") or [None])[0]
+                closes = (quote_block or {}).get("close") or []
+                usable = [float(x) for x in closes if x is not None and math.isfinite(float(x))]
+                price = usable[-1] if usable else None
+
+            if price is None:
+                errors.append(f"{rng}/{interval}: no usable price")
+                continue
+
+            price = float(price)
+            if not math.isfinite(price) or price <= 0:
+                errors.append(f"{rng}/{interval}: invalid price {price}")
+                continue
+
+            return {
+                "close": price,
+                "symbol": symbol,
+                "source": f"yahoo_chart_{rng}_{interval}",
+                "fetched_at": utc_now_iso(),
+            }
+        except Exception as e:
+            errors.append(f"{rng}/{interval}: {e}")
+
+    raise ValueError(f"Yahoo chart failed for {ticker} ({symbol}): " + " | ".join(errors[-3:]))
+
+
+def stale_cached_price(ticker: str, state_cache: dict) -> float | None:
+    """
+    Emergency fallback: return any previous cached price, even if expired.
+    This prevents one temporary data-source block from killing the entire GitHub Action.
+    """
+    px_cache = state_cache.setdefault("price_cache", {})
+    cached = px_cache.get(ticker)
+    if isinstance(cached, dict) and "price" in cached:
+        try:
+            price = float(cached["price"])
+            if math.isfinite(price) and price > 0:
+                return price
+        except Exception:
+            return None
+    return None
 
 def infer_currency_from_ticker(ticker: str) -> str:
     t = (ticker or "").strip().upper()
@@ -295,17 +426,33 @@ def fx_to_gbp_rate(from_ccy: str, state_cache: dict) -> float:
 
         gbp_usd = None
         meta = {}
+        errors = []
         try:
             b = stooq_latest_close_from_bars("gbpusd", "5")
             gbp_usd = float(b["close"])
             meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
-        except Exception:
-            q = stooq_quote("gbpusd")
-            gbp_usd = float(q["close"])
-            meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+        except Exception as e:
+            errors.append(f"stooq_bars: {e}")
+            try:
+                q = stooq_quote("gbpusd")
+                gbp_usd = float(q["close"])
+                meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+            except Exception as e2:
+                errors.append(f"stooq_quote: {e2}")
+                try:
+                    y = yahoo_chart_latest_price("GBPUSD=X")
+                    gbp_usd = float(y["close"])
+                    meta = {"source": y.get("source"), "yahoo_symbol": y.get("symbol")}
+                except Exception as e3:
+                    errors.append(f"yahoo_chart: {e3}")
 
-        if gbp_usd <= 0:
-            raise ValueError("Invalid GBPUSD rate from Stooq")
+        if gbp_usd is None or gbp_usd <= 0:
+            stale = get_cached("GBPUSD")
+            if stale is not None:
+                gbp_usd = stale
+                meta = {"source": "stale_fx_cache", "warnings": errors[-3:]}
+            else:
+                raise ValueError("Invalid GBPUSD rate; " + " | ".join(errors[-3:]))
         usd_gbp = 1.0 / gbp_usd
         set_cached("USDGBP", usd_gbp, meta)
         return usd_gbp
@@ -347,17 +494,33 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
 
         gbp_usd = None
         meta = {}
+        errors = []
         try:
             b = stooq_latest_close_from_bars("gbpusd", "5")
             gbp_usd = float(b["close"])
             meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
-        except Exception:
-            q = stooq_quote("gbpusd")
-            gbp_usd = float(q["close"])
-            meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+        except Exception as e:
+            errors.append(f"stooq_bars: {e}")
+            try:
+                q = stooq_quote("gbpusd")
+                gbp_usd = float(q["close"])
+                meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+            except Exception as e2:
+                errors.append(f"stooq_quote: {e2}")
+                try:
+                    y = yahoo_chart_latest_price("GBPUSD=X")
+                    gbp_usd = float(y["close"])
+                    meta = {"source": y.get("source"), "yahoo_symbol": y.get("symbol")}
+                except Exception as e3:
+                    errors.append(f"yahoo_chart: {e3}")
 
-        if gbp_usd <= 0:
-            raise ValueError("Invalid GBPUSD rate from Stooq")
+        if gbp_usd is None or gbp_usd <= 0:
+            stale = get_cached("GBPUSD")
+            if stale is not None:
+                gbp_usd = stale
+                meta = {"source": "stale_fx_cache", "warnings": errors[-3:]}
+            else:
+                raise ValueError("Invalid GBPUSD rate; " + " | ".join(errors[-3:]))
         set_cached("GBPUSD", gbp_usd, meta)
         return gbp_usd
 
@@ -370,9 +533,14 @@ def gbp_to_ccy_rate(to_ccy: str, state_cache: dict) -> float:
 def price_for_holding(ticker: str, state_cache: dict) -> float:
     """
     Returns a "current" price suitable for 'since last run'.
-    - Prefer Stooq 5-minute bars latest close
-    - Fall back to Stooq quote close
-    Cached for PRICE_CACHE_TTL_SECONDS.
+    Source order:
+      1) Stooq 5-minute bars latest close
+      2) Stooq quote close
+      3) Yahoo Finance chart endpoint
+      4) Expired/stale cached price as emergency fallback
+
+    The stale-cache fallback is deliberate: a temporary provider block should not crash
+    the whole dashboard run and stop latest/history JSON from being written.
     """
     px_cache = state_cache.setdefault("price_cache", {})
     now = utc_now_iso()
@@ -387,14 +555,34 @@ def price_for_holding(ticker: str, state_cache: dict) -> float:
 
     price = None
     meta = {}
+    errors = []
+
     try:
         b = stooq_latest_close_from_bars(ticker, "5")
         price = float(b["close"])
         meta = {"source": b.get("source"), "bar_dt": b.get("bar_dt")}
-    except Exception:
-        q = stooq_quote(ticker)
-        price = float(q["close"])
-        meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+    except Exception as e:
+        errors.append(f"stooq_bars: {e}")
+        try:
+            q = stooq_quote(ticker)
+            price = float(q["close"])
+            meta = {"source": "stooq_quote", "quote_date": q.get("date"), "quote_time": q.get("time")}
+        except Exception as e2:
+            errors.append(f"stooq_quote: {e2}")
+            try:
+                y = yahoo_chart_latest_price(ticker)
+                price = float(y["close"])
+                meta = {"source": y.get("source"), "yahoo_symbol": y.get("symbol")}
+            except Exception as e3:
+                errors.append(f"yahoo_chart: {e3}")
+
+    if price is None or not math.isfinite(float(price)) or float(price) <= 0:
+        stale = stale_cached_price(ticker, state_cache)
+        if stale is not None:
+            price = stale
+            meta = {"source": "stale_price_cache", "warnings": errors[-3:]}
+        else:
+            raise ValueError(f"No usable price for {ticker}: " + " | ".join(errors[-3:]))
 
     px_cache[ticker] = {
         "price": float(price),
@@ -402,7 +590,6 @@ def price_for_holding(ticker: str, state_cache: dict) -> float:
         **meta,
     }
     return float(price)
-
 
 def infer_split_ratio(prev_price: float, new_price: float):
     """
