@@ -1,5 +1,5 @@
 {
-  "as_of_utc": "2026-07-05T17:21:08Z",
+  "as_of_utc": "2026-07-05T19:36:37Z",
   "as_of_uk_date": "2026-07-05",
   "portfolio_A": {
     "key": "portfolio_A",
@@ -128,17 +128,17 @@
         "ticker": "QQQ.US",
         "qty": 328.99622605,
         "currency": "USD",
-        "price": 712.6,
+        "price": 712.6044,
         "fx_to_gbp": 0.74906367,
-        "value_gbp": 175612.52,
+        "value_gbp": 175613.6,
         "type": "asset",
-        "change_price_vs_prev": 0.0,
-        "change_value_gbp_vs_prev": 0.0,
-        "change_pct_vs_prev": 0.0,
-        "price_direction": "flat",
+        "change_price_vs_prev": 0.0044,
+        "change_value_gbp_vs_prev": 1.08,
+        "change_pct_vs_prev": 0.0006,
+        "price_direction": "up",
         "inception_value_gbp": 150000.0,
-        "total_change_gbp_since_start": 25612.52,
-        "total_change_pct_since_start": 17.075,
+        "total_change_gbp_since_start": 25613.6,
+        "total_change_pct_since_start": 17.0757,
         "total_direction": "up"
       },
       {
@@ -193,12 +193,12 @@
         "total_direction": "down"
       }
     ],
-    "total_value_gbp": 1098008.59,
+    "total_value_gbp": 1098009.68,
     "inception_value_gbp": 1000000.0,
-    "total_change_gbp_since_start": 98008.59,
-    "total_change_pct_since_start": 9.8009,
+    "total_change_gbp_since_start": 98009.68,
+    "total_change_pct_since_start": 9.801,
     "total_direction": "up",
-    "change_gbp_vs_prev": 0.0
+    "change_gbp_vs_prev": 1.09
   },
   "portfolio_B": {
     "key": "portfolio_B",
@@ -424,17 +424,17 @@
         "ticker": "QQQ.US",
         "qty": 244.59951077,
         "currency": "USD",
-        "price": 712.6,
+        "price": 712.6044,
         "fx_to_gbp": 0.74906367,
-        "value_gbp": 130563.0,
+        "value_gbp": 130563.81,
         "type": "asset",
-        "change_price_vs_prev": 0.0,
-        "change_value_gbp_vs_prev": 0.0,
-        "change_pct_vs_prev": 0.0,
-        "price_direction": "flat",
+        "change_price_vs_prev": 0.0044,
+        "change_value_gbp_vs_prev": 0.81,
+        "change_pct_vs_prev": 0.0006,
+        "price_direction": "up",
         "inception_value_gbp": 111631.38,
-        "total_change_gbp_since_start": 18931.62,
-        "total_change_pct_since_start": 16.9591,
+        "total_change_gbp_since_start": 18932.43,
+        "total_change_pct_since_start": 16.9598,
         "total_direction": "up"
       },
       {
@@ -557,12 +557,12 @@
         "total_direction": "up"
       }
     ],
-    "total_value_gbp": 1092795.79,
+    "total_value_gbp": 1092796.59,
     "inception_value_gbp": 1000000.0,
-    "total_change_gbp_since_start": 92795.79,
-    "total_change_pct_since_start": 9.2796,
+    "total_change_gbp_since_start": 92796.59,
+    "total_change_pct_since_start": 9.2797,
     "total_direction": "up",
-    "change_gbp_vs_prev": 0.0
+    "change_gbp_vs_prev": 0.8
   },
   "benchmarks": {
     "sp500": {
