@@ -3,10 +3,16 @@ name: update
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 * * * *"   # hourly (UTC)
+    # Every 15 minutes across US market hours, allowing for DST shifts.
+    # Covers 09:30-16:00 New York time in both summer and winter.
+    - cron: "*/15 13-21 * * 1-5"
 
 permissions:
   contents: write
+
+concurrency:
+  group: update-dashboard-data
+  cancel-in-progress: true
 
 jobs:
   update:
