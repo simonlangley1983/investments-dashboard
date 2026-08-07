@@ -31,167 +31,167 @@
       "MSTR.US": 266.0160205647834
     }
   },
-  "last_run_utc": "2026-08-07T10:45:02Z",
+  "last_run_utc": "2026-08-07T11:39:44Z",
   "price_cache": {
     "NVDA.US": {
       "price": 218.99,
-      "updated_at": "2026-08-07T10:45:02Z",
+      "updated_at": "2026-08-07T11:39:44Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "NVDA"
     },
     "MSFT.US": {
       "price": 499.86,
-      "updated_at": "2026-08-07T10:45:03Z",
+      "updated_at": "2026-08-07T11:39:46Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "MSFT"
     },
     "ASML.US": {
       "price": 1704.37,
-      "updated_at": "2026-08-07T10:45:04Z",
+      "updated_at": "2026-08-07T11:39:47Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "ASML"
     },
     "AVGO.US": {
       "price": 420.565,
-      "updated_at": "2026-08-07T10:45:05Z",
+      "updated_at": "2026-08-07T11:39:48Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "AVGO"
     },
     "GOOGL.US": {
       "price": 357.75,
-      "updated_at": "2026-08-07T10:45:06Z",
+      "updated_at": "2026-08-07T11:39:50Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "GOOGL"
     },
     "AMZN.US": {
       "price": 272.26,
-      "updated_at": "2026-08-07T10:45:06Z",
+      "updated_at": "2026-08-07T11:39:51Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "AMZN"
     },
     "META.US": {
       "price": 589.9,
-      "updated_at": "2026-08-07T10:45:07Z",
+      "updated_at": "2026-08-07T11:39:53Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "META"
     },
     "QQQ.US": {
       "price": 714.65,
-      "updated_at": "2026-08-07T10:45:08Z",
+      "updated_at": "2026-08-07T11:39:54Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "QQQ"
     },
     "TQQQ.US": {
       "price": 72.03,
-      "updated_at": "2026-08-07T10:45:09Z",
+      "updated_at": "2026-08-07T11:39:55Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "TQQQ"
     },
     "PLTR.US": {
       "price": 155.92,
-      "updated_at": "2026-08-07T10:45:10Z",
+      "updated_at": "2026-08-07T11:39:56Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "PLTR"
     },
     "COIN.US": {
       "price": 145.41,
-      "updated_at": "2026-08-07T10:45:10Z",
+      "updated_at": "2026-08-07T11:39:58Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "COIN"
     },
     "SMCI.US": {
       "price": 29.38,
-      "updated_at": "2026-08-07T10:45:13Z",
+      "updated_at": "2026-08-07T11:40:00Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "SMCI"
     },
     "ARM.US": {
       "price": 286.68,
-      "updated_at": "2026-08-07T10:45:14Z",
+      "updated_at": "2026-08-07T11:40:01Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "ARM"
     },
     "AMD.US": {
       "price": 489.28,
-      "updated_at": "2026-08-07T10:45:14Z",
+      "updated_at": "2026-08-07T11:40:02Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "AMD"
     },
     "ALAB.US": {
       "price": 331.5,
-      "updated_at": "2026-08-07T10:45:15Z",
+      "updated_at": "2026-08-07T11:40:04Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "ALAB"
     },
     "SOXL.US": {
       "price": 132.33,
-      "updated_at": "2026-08-07T10:45:16Z",
+      "updated_at": "2026-08-07T11:40:05Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "SOXL"
     },
     "SNOW.US": {
       "price": 318.0,
-      "updated_at": "2026-08-07T10:45:17Z",
+      "updated_at": "2026-08-07T11:40:06Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "SNOW"
     },
     "NET.US": {
       "price": 284.43,
-      "updated_at": "2026-08-07T10:45:18Z",
+      "updated_at": "2026-08-07T11:40:07Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "NET"
     },
     "MARA.US": {
       "price": 10.65,
-      "updated_at": "2026-08-07T10:45:18Z",
+      "updated_at": "2026-08-07T11:40:08Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "MARA"
     },
     "MSTR.US": {
       "price": 96.85,
-      "updated_at": "2026-08-07T10:45:19Z",
+      "updated_at": "2026-08-07T11:40:09Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "MSTR"
     },
     "SPY.US": {
       "price": 768.56,
-      "updated_at": "2026-08-07T10:45:23Z",
+      "updated_at": "2026-08-07T11:40:14Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "SPY"
     },
     "EWJV.US": {
       "price": 47.58,
-      "updated_at": "2026-08-07T10:45:20Z",
+      "updated_at": "2026-08-07T11:40:10Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "EWJV"
     },
     "ISF.UK": {
-      "price": 1066.552,
-      "updated_at": "2026-08-07T10:45:21Z",
+      "price": 1068.6,
+      "updated_at": "2026-08-07T11:40:11Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "ISF.L"
     },
     "SMEA.UK": {
-      "price": 9207.0,
-      "updated_at": "2026-08-07T10:45:22Z",
+      "price": 9211.0,
+      "updated_at": "2026-08-07T11:40:12Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "SMEA.L"
     },
     "AGG.US": {
       "price": 97.43,
-      "updated_at": "2026-08-07T10:45:22Z",
+      "updated_at": "2026-08-07T11:40:13Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "AGG"
     },
     "FXI.US": {
       "price": 35.95,
-      "updated_at": "2026-08-07T10:45:24Z",
+      "updated_at": "2026-08-07T11:40:16Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "FXI"
     },
     "VGT.US": {
       "price": 119.6,
-      "updated_at": "2026-08-07T10:45:24Z",
+      "updated_at": "2026-08-07T11:40:17Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "VGT"
     }
@@ -202,8 +202,8 @@
       "updated_at": "2026-01-05T21:44:13Z"
     },
     "USDGBP": {
-      "rate": 0.744324525493115,
-      "updated_at": "2026-08-07T10:45:11Z",
+      "rate": 0.7437709185570844,
+      "updated_at": "2026-08-07T11:39:59Z",
       "source": "yahoo_chart_1d_1m",
       "yahoo_symbol": "GBPUSD=X"
     }
